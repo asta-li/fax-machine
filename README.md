@@ -1,6 +1,6 @@
 # This is a fax machine
 
-It doesn't look like it but I swear it is.
+https://www.faxmachine.dev/
 
 ## Run the code
 
@@ -32,8 +32,9 @@ Deploy to the web via Google App Engine.
 
 From project root:
 ```
+cd client
+npm run build
+cd ..
 gcloud app deploy
 ```
 
-Live from San Francisco, it's a fax machine!
-https://fax-machine-295219.wl.r.appspot.com/

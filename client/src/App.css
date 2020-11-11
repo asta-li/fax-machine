@@ -37,7 +37,7 @@
   color: white;
 }
 
-.Select {
+.select-file {
   margin-right: 10px;
   border: 1px solid #ccc;
   display: inline-block;
@@ -45,7 +45,7 @@
   cursor: pointer;
 }
 
-.Upload {
+.fax-file {
   margin-top: 10px;
   margin-right: 10px;
   background-color: Transparent;
@@ -62,12 +62,6 @@
 
 input[type="file"] {
   display: none;
-}
-
-.divider{
-    width:5px;
-    height:auto;
-    display:inline-block;
 }
 
 .App-link {
