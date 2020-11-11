@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"mime/multipart"
+	"log"
 	"os"
 	"time"
 
@@ -13,9 +13,10 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+// TODO: set an lifecycle policy for pdfs and metadata that are left behind
 // Uploads a file to GCS.
 // See https://cloud.google.com/storage/docs/uploading-objects#storage-upload-object-go.
-func uploadGCS(dataToWrite *multipart.File, fileName string) error {
+func uploadGCS(dataToWrite io.Reader, fileName string) error {
 	// Create GCS connection
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
@@ -30,7 +31,7 @@ func uploadGCS(dataToWrite *multipart.File, fileName string) error {
 	// Upload an object with storage.Writer.
 	bucketName := os.Getenv("BUCKET_NAME")
 	w := client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
-	if _, err = io.Copy(w, *dataToWrite); err != nil {
+	if _, err = io.Copy(w, dataToWrite); err != nil {
 		return fmt.Errorf("io.Copy: %v", err)
 	}
 	if err := w.Close(); err != nil {
@@ -85,4 +86,31 @@ func getSignedUrl(fileName string) (string, error) {
 		return "", fmt.Errorf("storage.SignedURL: %v", err)
 	}
 	return signedUrl, nil
+}
+
+func downloadGCS(filePath string) ([]byte, error) {
+
+	bucketName := os.Getenv("BUCKET_NAME")
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("storage.NewClient: %v", err)
+	}
+	defer client.Close()
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
+	defer cancel()
+
+	rc, err := client.Bucket(bucketName).Object(filePath).NewReader(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Object(%q).NewReader: %v", filePath, err)
+	}
+	defer rc.Close()
+
+	data, err := ioutil.ReadAll(rc)
+	if err != nil {
+		return nil, fmt.Errorf("ioutil.ReadAll: %v", err)
+	}
+	log.Printf("Blob %v downloaded.\n", filePath)
+	return data, nil
 }

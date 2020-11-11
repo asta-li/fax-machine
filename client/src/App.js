@@ -1,16 +1,20 @@
-import axios from 'axios'; 
+import axios from 'axios';
 import React from 'react';
 import PropTypes from 'prop-types';
 import Button from '@material-ui/core/Button';
 import CssBaseline from '@material-ui/core/CssBaseline';
-import Link from '@material-ui/core/Link';
+import MLink from '@material-ui/core/Link';
 import Box from '@material-ui/core/Box';
 import Typography from '@material-ui/core/Typography';
 import Container from '@material-ui/core/Container';
-import { withStyles } from '@material-ui/styles';
-import { makeStyles } from '@material-ui/core/styles';
+import {withStyles} from '@material-ui/styles';
+import {makeStyles} from '@material-ui/core/styles';
 
-import { FileSelector, FaxNumberInput } from './Input.js';
+import {Link, Route, Switch, useLocation} from 'react-router-dom';
+
+import {FaxNumberInput, FileSelector} from './Input.js';
+import SendingFax from "./components/SendingFax";
+import CircularProgress from "@material-ui/core/CircularProgress";
 
 // Custom styles.
 const styles = makeStyles((theme) => ({
@@ -35,11 +39,13 @@ class FileFaxer extends React.Component {
     super(props);
     this.state = {
       faxFileStatus: '',
+      faxUploadSuccessful: false
     };
     this.handleFileFax = this.handleFileFax.bind(this);
   }
 
   handleFileFax() {
+
     if (!this.props.selectedFile) {
       this.setState({
         faxFileStatus: 'Select a file to fax',
@@ -54,31 +60,36 @@ class FileFaxer extends React.Component {
       this.setState({
         faxFileStatus: 'Faxing...',
       });
-  
-      // Create form containing the file data.
-      const formData = new FormData(); 
-      formData.append('file', this.props.selectedFile); 
-      formData.append('faxNumber', this.props.faxNumber); 
 
-      const config = {     
+      // Create form containing the file data.
+      const formData = new FormData();
+      formData.append('file', this.props.selectedFile);
+      formData.append('faxNumber', this.props.faxNumber);
+
+      const config = {
         headers: { 'content-type': 'multipart/form-data' }
       }
 
       // Sends the file to the backend for payment processing, upload, and faxing.
-      axios.post('/api/fax', formData, config)
-        .then((response) => {
-          console.log('Received successful fax response', response);
-          
-          this.setState({
-            faxFileStatus: 'Successfully faxed ' + response.data.FaxId + ' for $' + response.data.Price + '!',
+      axios.post('/api/upload', formData, config)
+          .then((response) => {
+            console.log('Received successful fax response', response);
+
+            console.log('received successful upload response, redirect url is', response)
+            // window.open(response.data.redirectUrl, '', 'location:no, height=687, width=500')
+            window.location.href = response.data.redirectUrl;
+            this.setState({
+              faxFileStatus: 'Successfully uploaded ' + response.data.FaxId + ' for $' + response.data.Price + '!',
+            });
+            // let parent know that upload is successful
+            this.props.uploadSuccessHandler()
+          })
+          .catch((error) => {
+            console.log(error);
+            this.setState({
+              faxFileStatus: 'Unable to fax!',
+            });
           });
-        })
-        .catch((error) => {
-          console.log(error);
-          this.setState({
-            faxFileStatus: 'Unable to fax!',
-          });
-        });
     }
   }
 
@@ -86,19 +97,19 @@ class FileFaxer extends React.Component {
   render() {
     // const { classes } = this.props;
     return (
-      <React.Fragment>
-        {/* TODO(asta): Make this a type="submit" button and correctly route the form */}
-        <Button
-          fullWidth
-          variant="contained"
-          color="primary"
-          /*className={classes.submit}*/
-          onClick={this.handleFileFax}
-        >
-          Fax me!
-        </Button>
-        {this.state.faxFileStatus}
-      </React.Fragment>
+        <React.Fragment>
+          {/* TODO(asta): Make this a type="submit" button and correctly route the form */}
+          <Button
+              fullWidth
+              variant="contained"
+              color="primary"
+              /*className={classes.submit}*/
+              onClick={this.handleFileFax}
+          >
+            Fax me!
+          </Button>
+          {this.state.faxFileStatus}
+        </React.Fragment>
     );
   }
 }
@@ -111,86 +122,123 @@ class FileFaxer extends React.Component {
 // 
 // const StyledFileFaxer = withStyles(styles)(FileFaxer);
 
+// A custom hook that builds on useLocation to parse
+// the query string for you.
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
+
 function Copyright() {
   return (
-    <Typography variant="body2" color="textSecondary" align="center">
-      {'Copyright © '}
-      <Link color="inherit" href="https://github.com/asta-li/fax-machine">
-        Fax Machine Dev
-      </Link>{' '}
-      {new Date().getFullYear()}
-      {'.'}
-    </Typography>
+      <Typography variant="body2" color="textSecondary" align="center">
+        {'Copyright © '}
+        <MLink color="inherit" href="https://github.com/asta-li/fax-machine">
+          Fax Machine Dev
+        </MLink>{' '}
+        {new Date().getFullYear()}
+        {'.'}
+      </Typography>
   );
 }
 
-class FaxMachineApp extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { 
-      selectedFile: null,
-      faxNumber: '+16504344807',
-    };
-    
-    this.setSelectedFile = this.setSelectedFile.bind(this);
-    this.setFaxNumber = this.setFaxNumber.bind(this);
-  }
+const FaxMachineApp = () => {
 
-  // Sets the selected file.
-  // We pass this callback to FileSelector in order maintain state at the top level.
-  setSelectedFile(selectedFile) {
-    if (selectedFile) {
-      this.setState({
-        selectedFile: selectedFile,
-      }); 
-    }
-  } 
-  
-  // Sets the fax number.
-  // We pass this callback to FaxNumberInput in order maintain state at the top level.
-  setFaxNumber(faxNumber) {
-    if (faxNumber) {
-      this.setState({
-        faxNumber: faxNumber,
-      }); 
-    }
-  } 
+  let query = useQuery();
 
-  render() {
-    const { classes } = this.props;
-    return (
-      <Container component="main" maxWidth="xs">
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
-        <CssBaseline />
-          <div className={classes.paper}>
+  return <Container component="main" maxWidth="xs">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+    <div>
+      {/*<nav>*/}
+      {/*  <ul>*/}
+      {/*    <li>*/}
+      {/*      <Link to="/">Home</Link>*/}
+      {/*    </li>*/}
+      {/*  </ul>*/}
+      {/*</nav>*/}
+
+      {/* A <Switch> looks through its children <Route>s and
+            renders the first one that matches the current URL. */}
+      <Switch>
+        <Route exact path="/">
+          <Home action={query.get("action")} transactionId={query.get("transaction")} token={query.get("token")} payerId={query.get("PayerId=D")} />
+        </Route>
+
+      </Switch>
+    </div>
+    <Box mt={8}>
+      <Copyright />
+    </Box>
+  </Container>
+}
+
+
+const Home = props => {
+  const [selectedFile, setSelectedFile] = React.useState(null);
+  const [faxNumber, setFaxNumber] = React.useState('+16504344807');
+  const [isUploadSuccess, setUploadSuccess] = React.useState(false);
+
+  const uploadSuccessHandler = (id) => {
+    setUploadSuccess(true);
+  };
+
+  let showFileFaxer;
+
+  if (!isUploadSuccess && !props.action) {
+    showFileFaxer =
+        <div className={props.paper}>
           <Typography component="h1" variant="h5">
             Sign in
           </Typography>
-            <form className={classes.form}>
+          <form className={props.form}>
             {/* Controls fax number input. */}
             <FaxNumberInput
-              setFaxNumber={this.setFaxNumber}
+                setFaxNumber={setFaxNumber}
             />
             {/* Controls file selection and validation. This component allows a user to select a file,
                 validates the file, and updates the file information in the app state. */}
             <FileSelector
-              setSelectedFile={this.setSelectedFile}
+                setSelectedFile={setSelectedFile}
             />
             {/* Controls file upload and faxing. */}
             {/*<StyledFileFaxer*/}
             <FileFaxer
-              selectedFile={this.state.selectedFile}
-              faxNumber={this.state.faxNumber}
+                selectedFile={selectedFile}
+                faxNumber={faxNumber}
+                uploadSuccessHandler={uploadSuccessHandler}
             />
           </form>
-        </div>
-        <Box mt={8}>
-          <Copyright />
-        </Box>
-      </Container>
-    );
+        </div>;
   }
-}
+  else {
+    showFileFaxer = <div></div>;
+  }
+
+  return <div>
+    <CssBaseline />
+    <div>
+      {showFileFaxer}
+      {
+        isUploadSuccess ?
+            <div>
+              file succesfully uploaded!
+              you're redirected to paypal for payment!
+            </div> :
+            <div></div>
+      }
+    </div>
+    <div>
+      {
+        props.action === "process" ? (
+            <div>
+              <SendingFax transactionId={props.transactionId}/>
+            </div>
+        ) : (
+            <h3></h3>
+        )
+      }
+    </div>
+  </div>
+};
 
 FaxMachineApp.propTypes = {
   classes: PropTypes.object.isRequired,

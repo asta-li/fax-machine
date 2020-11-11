@@ -44,6 +44,11 @@ source ./variables.env
 
 ## Run the code
 
+### Run both react and go server
+```bash
+source ./variables.env && npm run build --prefix ./client && go run ./server
+```
+
 ### Run the Go server
 
 Build the static React frontend and launch the Go server.
