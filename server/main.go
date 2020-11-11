@@ -6,9 +6,12 @@ import (
   "encoding/json"
   "fmt"
   guuid "github.com/google/uuid"
+  "io"
   "log"
+  "mime/multipart"
   "net/http"
   "os"
+  "time"
 )
 
 // Contains file fax metadata.
@@ -16,48 +19,61 @@ type FaxResponse struct {
   Price float32
 }
 
-func storeGCS(dataToWrite, bucketName, fileName string) error {
+
+// Uploads an object to GCS.
+// See https://cloud.google.com/storage/docs/uploading-objects#storage-upload-object-go.
+func storeGCS(dataToWrite multipart.File, bucketName string, fileName string) error {
   // Create GCS connection
   ctx := context.Background()
   client, err := storage.NewClient(ctx)
   if err != nil {
-    log.Fatal(err)
+    return fmt.Errorf("storage.NewClient: %v", err)
   }
+  defer client.Close()
 
-  // Connect to bucket
-  bucket := client.Bucket(bucketName)
-  obj := bucket.Object(fileName)
+  // TODO(asta): What is this doing?
+  ctx, cancel := context.WithTimeout(ctx, time.Second*50)
+  defer cancel()
 
-  // Write fileData to obj.
-  w := obj.NewWriter(ctx)
-  if _, err := fmt.Fprintf(w, dataToWrite); err != nil {
-    log.Fatal(err)
+  // Upload an object with storage.Writer.
+  w := client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
+  if _, err = io.Copy(w, dataToWrite); err != nil {
+    return fmt.Errorf("io.Copy: %v", err)
   }
-
-  // Close, just like writing a file.
   if err := w.Close(); err != nil {
-    log.Fatal(err)
+    return fmt.Errorf("Writer.Close: %v", err)
   }
   return nil
 }
 
+// Handle fax requests.
 func faxHandler(w http.ResponseWriter, r *http.Request){
   log.Println("Handling fax request")
-  r.ParseForm();
+  // TODO(asta): Improve error handling.
 
-  // TODO(asta): Debug form parsing.
-  for key, value := range r.Form {
-    fmt.Printf("%s = %s\n", key, value)
-    log.Println(key)
-    log.Println(value)
+  // TODO(asta): Perform server-side file validation.
+  // Parse form, storing up to 5MB in memory.
+  if err := r.ParseMultipartForm(5 << 20); err != nil {
+    log.Fatal(err)
   }
+
+  file, header, err := r.FormFile("file")
+  defer file.Close()
+  log.Println(header.Header)
 
   // Store file in GCS.
   bucketName := os.Getenv("BUCKET_NAME")
-  fileId := guuid.New()
-  fileName := "gs://" + bucketName + "/" + fileId.String()
-  storeGCS("I am a fax!", bucketName, fileName)
-  log.Println("Uploaded file to", fileName)
+  fileName := guuid.New()
+  storeGCS(file, bucketName, fileName.String())
+  filePath := "gs://" + bucketName + "/" + fileName.String()
+  log.Println("Uploaded file to", filePath)
+
+
+  // TODO(asta): Fax the file.
+
+
+  // TODO(asta): Delete the file from GCS.
+
 
   // Create successful response data.
   faxResponse := FaxResponse{

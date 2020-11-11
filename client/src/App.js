@@ -4,7 +4,9 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-
+// TODO(asta): Perform additional client-side validation,
+// such as checking for JavaScript in the file.
+//
 // Perform basic file validation. Returns a pair {fileIsValid, status}.
 // If validation is successful then fileIsValid is true and the status is the file name.
 // Otherwise, fileIsValid is false and the status contains an error message.
@@ -99,15 +101,19 @@ class FileFaxer extends React.Component {
         faxFileStatus: 'Faxing...',
       });
   
+      // Create form containing the file data.
       const formData = new FormData(); 
       formData.append( 
-        'fileToFax', 
+        'file', 
         this.props.selectedFile,
-        this.props.selectedFile.name,
       ); 
 
+      const config = {     
+        headers: { 'content-type': 'multipart/form-data' }
+      }
+
       // Sends the file to the backend for payment processing, upload, and faxing.
-      axios.post('/fax', formData)
+      axios.post('/fax', formData, config)
         .then((response) => {
           console.log('Received successful fax response', response);
           
@@ -118,7 +124,7 @@ class FileFaxer extends React.Component {
         .catch((error) => {
           console.log(error);
           this.setState({
-            faxFileStatus: 'Error: ' + error,
+            faxFileStatus: error,
           });
         });
     }

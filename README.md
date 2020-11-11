@@ -17,6 +17,14 @@ This project requires:
 - [Golang](https://golang.org/doc/install)
 - [GCloud SDK](https://cloud.google.com/sdk/docs/install)
 
+### Set up Google Cloud credentials
+
+Run the following, selecting region `us-west2`:
+```
+gcloud init
+gcloud auth application-default login
+```
+
 ### Set up Twilio credentials
 
 Follow the [instructions](https://www.twilio.com/docs/usage/secure-credentials) to set up secure
