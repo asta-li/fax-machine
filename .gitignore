@@ -1,4 +1,7 @@
-# .gitignore 
+# .gitignore
+
+# jetbrains IDE files
+.idea
 
 # Ignore npm-installed modules.
 ./client/node_modules 
@@ -6,3 +9,9 @@
 # Twilio credentials.
 twilio.env
 twilio.yaml
+
+
+# Payment credentials
+credentials.yaml
+payment.env
+
