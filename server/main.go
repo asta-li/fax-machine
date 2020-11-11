@@ -1,12 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/plutov/paypal/v3"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 )
+
+var paypalClient *paypal.Client
 
 // Contains file fax metadata.
 type FaxResponse struct {
@@ -14,10 +19,10 @@ type FaxResponse struct {
 	Price float32
 }
 
-// Handle fax requests.
-func faxHandlerGin(c *gin.Context) {
+// Upload pdf
+func uploadHandlerGin(c *gin.Context) {
 
-	log.Println("Handling fax request")
+	log.Println("Upload pdf")
 
 	// TODO: Perform file validation.
 	file, header, _ := c.Request.FormFile("file")
@@ -26,9 +31,46 @@ func faxHandlerGin(c *gin.Context) {
 	log.Println("Destination fax number:", faxNumber)
 
 	// Upload and fax the file.
-	faxId, err := uploadAndFaxFile(&file, faxNumber)
+	redirectUrl, err := uploadFileAndCreateOrder(&file, faxNumber)
 	if err != nil {
-		panic(err)
+		panic(err) // TODO: return proper http error code and fix error handling
+	}
+
+	log.Println("Sending upload status response")
+	c.JSON(http.StatusOK, gin.H{
+		"uploadSuccess": true,
+		"redirectUrl": redirectUrl,
+	})
+}
+
+// Handle fax requests.
+func faxHandler(c *gin.Context) {
+
+	log.Println("Handling fax request")
+
+	transactionId := c.Request.PostFormValue("transactionId")
+
+	// perform validation on input
+	var re = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
+	if !re.MatchString(transactionId) {
+		log.Println("main.faxHandler transaction id format is incorrect, must be an uuid")
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
+			"message": "transactionId format is invalid, must be an uuid",
+		})
+		return
+	}
+
+	log.Println("TransactionId:", transactionId)
+
+	// Upload and fax the file.
+	faxId, err := faxFile(transactionId)
+	if err != nil {
+		// TODO: handle this with correct error code
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "something unexpected happened when trying to fax. Please try again later",
+		})
+		log.Println(err)
+		return
 	}
 
 	// Create successful response data.
@@ -96,6 +138,14 @@ func faxWebhookHandler(c *gin.Context) {
 
 func main() {
 
+	// set up paypal client as a global variable
+	client, err := SetUpPaypalClient()
+	if err != nil {
+		panic(fmt.Errorf("unable to set up paypal client, aborting... %s\n", err))
+	}
+
+	paypalClient = client
+
 	// GIN
 	router := gin.Default()
 	router.Use(static.Serve("/", static.LocalFile("./client/build", true)))
@@ -110,8 +160,15 @@ func main() {
 				"message": "pong",
 			})
 		})
-		api.POST("/fax", faxHandlerGin)
+		api.POST("/upload", uploadHandlerGin)
+		api.POST("/fax-id", faxHandler)
+		api.POST("/fax", faxHandler)
 		api.GET("/fax-status", faxQueryHandler)
+
+		api.GET("/paypal", getCreateOrderHandler)
+		api.GET("/capture", getCaptureOrderHandler)
+
+		api.GET("/process", getCaptureOrderHandler)
 	}
 
 	// Fax status and completion webhook.

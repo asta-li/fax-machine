@@ -55,31 +55,68 @@ class FaxNumberInput extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      faxNumberError: '',
+      faxNumberStatus: "",
     };
   }
 
   // Update and validate the input fax number.
-  handleInput(faxNumber) {
-    const { isValid: faxNumberIsValid, status: faxNumberError } = validateFaxNumber(faxNumber);
+  handleInput(event) {
+    const faxNumber = event.target.value;
+    const {isValid: faxNumberIsValid, status: faxNumberStatus} = validateFaxNumber(faxNumber);
 
     this.setState({
-      faxNumberError: faxNumberError,
+      faxNumberStatus: faxNumberStatus,
     });
     if (faxNumberIsValid) {
-      this.props.setFaxNumber(faxNumber);
+      this.props.setFaxNumber("+1" + faxNumber);
     }
   }
 
-  // Render the element that controls fax number input.
+  // Render the element that controls file seletion.
   render() {
     return (
-      <>
-        <FaxInput onChange={(event) => this.handleInput(event)} />
-      </>
+        <div>
+          {/* <MuiPhoneNumber onlyCountries={'us'} onChange={this.handleInput}/> */}
+          <TextField
+              variant="outlined"
+              margin="normal"
+              required
+              /*fullWidth*/
+              id="fax"
+              label="Fax Number"
+              name="fax"
+              autoComplete="fax"
+              autoFocus
+              onClick={(event) => this.handleInput(event)}
+          />
+          {this.state.faxNumberStatus}
+        </div>
     );
   }
 }
+//
+// // Controls fax number input.
+// const FaxNumberInput = props => {
+//   const [faxNumberError, setFaxNumberError] = React.useState('');
+//
+//   // Update and validate the input fax number.
+//   const handleInput = (faxNumber) => {
+//     const { isValid: faxNumberIsValid, status: faxNumberError } = validateFaxNumber(faxNumber);
+//
+//     setFaxNumberError(faxNumberError);
+//
+//     if (faxNumberIsValid) {
+//       props.setFaxNumber(faxNumber);
+//     }
+//   };
+//
+//   // Render the element that controls fax number input.
+//     return (
+//       <>
+//         <FaxInput onChange={(event) => handleInput(event)} />
+//       </>
+//     );
+// };
 
 export { FileSelector, FaxNumberInput };
 
