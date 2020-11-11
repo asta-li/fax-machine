@@ -5,29 +5,70 @@ import logo from './logo.svg';
 import './App.css';
 
 
+// Perform basic file validation. Returns a pair {fileIsValid, status}.
+// If validation is successful then fileIsValid is true and the status is the file name.
+// Otherwise, fileIsValid is false and the status contains an error message.
+function validateFile(file) {
+  let fileIsValid = false;
+  let status = 'Error';
+
+  if (!file) {
+    fileIsValid = false;
+    status = 'Error: Please select a PDF file';
+    return {fileIsValid, status};
+  }
+
+  if (file.type !== 'application/pdf') {
+    fileIsValid = false;
+    status = 'Error: Selected file must be a PDF';
+    return {fileIsValid, status};
+  }
+ 
+  const fileSizeMB = file.size / 1024 / 1024;
+  const MAX_SIZE_MB = 5;
+  if (fileSizeMB > MAX_SIZE_MB) {
+    fileIsValid = false;
+    status = 'Error: Selected file is ' + fileSizeMB + 'MB but max is ' + MAX_SIZE_MB + 'MB';
+    return {fileIsValid, status};
+  }
+  
+  fileIsValid = true;
+  status = file.name;
+  return {fileIsValid, status};
+}
+
+// Controls selection of a local file.
 class FileSelector extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      selectedFile: null,
       selectedFileStatus: 'Select a file',
-      uploadedFileStatus: '',
     };
-    this.handleFileUpload = this.handleFileUpload.bind(this);
   }
-
-  handleFileSelection(event) {  
+  
+  // Update and validate the selected file.
+  handleFileSelection(event) {
+    if (event.target.files.length === 0) {
+        return;
+    }
     const selectedFile = event.target.files[0];
+    const {fileIsValid, status: selectedFileStatus} = validateFile(selectedFile);
+      
     this.setState({
-      selectedFile: selectedFile,
-      selectedFileStatus: selectedFile.name,
+      selectedFileStatus: selectedFileStatus,
     });
+    
+    if (fileIsValid) {
+      // Update the state with the selected file only after validation.
+      this.props.setSelectedFile(selectedFile);
+    }
   }
 
-  renderSelectFile() {
+  // Render the element that controls file seletion. 
+  render() {
     return (
-      <div>
-        <label className='Select'>
+      <div className='App-body'>
+        <label className='select-file'>
           <input type='file' onChange={(event) => this.handleFileSelection(event)} /> 
           Select PDF
         </label>
@@ -35,54 +76,9 @@ class FileSelector extends React.Component {
       </div>
     );
   }
-
-  handleFileUpload() {
-    console.log('Uploading', this.state.selectedFile);
-
-    if (!this.state.selectedFile) {
-      this.setState({
-        uploadedFileStatus: 'Please select a file to upload',
-      });
-    } else {
-      const formData = new FormData(); 
-      formData.append( 
-        'fileToFax', 
-        this.state.selectedFile, 
-        this.state.selectedFile.name 
-      ); 
-       
-      // Sends the file to the backend.
-      // TODO(asta): Handle this request.
-      axios.post('/upload', formData);
-  
-      this.setState({
-        uploadedFileStatus: 'Uploaded!',
-      });
-      this.props.setUploadedFile(this.state.selectedFile);
-    }
-  }
-
-  renderUploadFile() {
-    return (
-      <div>
-        <button className='Upload' onClick={this.handleFileUpload}>
-          Upload
-        </button>
-        {this.state.uploadedFileStatus}
-      </div>
-    );
-  }
-
-  render() {
-    return (
-      <div className='App-body'>
-        {this.renderSelectFile()}
-        {this.renderUploadFile()}
-      </div>
-    );
-  }
 }
 
+// Controls faxing a selected file.
 class FileFaxer extends React.Component {
   constructor(props) {
     super(props);
@@ -93,44 +89,46 @@ class FileFaxer extends React.Component {
   }
 
   handleFileFax() {
-    console.log('Faxing', this.props.uploadedFile);
+    if (!this.props.selectedFile) {
+      this.setState({
+        faxFileStatus: 'Select a file to fax',
+      });
+    } else {
+      console.log('Faxing', this.props.selectedFile);
 
-//    if (!this.props.uploadedFile) {
-//      this.setState({
-//        faxFileStatus: 'Upload a file to fax',
-//      });
-//    } else {
-//      const formData = new FormData(); 
-//      formData.append( 
-//        'fileToFax', 
-//        this.state.selectedFile, 
-//        this.state.selectedFile.name 
-//      ); 
-//       
-//      // Sends the file to the backend.
-//      // TODO(asta): Handle this request.
-//      axios.post('/upload', formData);
+      const formData = new FormData(); 
+      formData.append( 
+        'fileToFax', 
+        this.props.selectedFile,
+        this.props.selectedFile.name,
+      ); 
+       
+      // Sends the file to the backend for payment processing, upload, and faxing.
+      axios.post('/fax', formData)
+        .then(function (response) {
+          // TODO(asta): Update state and display response.
+          console.log('Received fax response', response);
+          console.log('success', response.data.Success);
+          console.log('price', response.data.Price);
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
   
-    this.setState({
-      faxFileStatus: 'Successfully faxed!',
-    });
+      this.setState({
+        faxFileStatus: 'Successfully faxed!',
+      });
+    }
   }
 
-  renderFaxFile() {
-    return (
-      <div>
-        <button className='Upload' onClick={this.handleFileFax}>
-          Fax me!
-        </button>
-        {this.state.faxFileStatus}
-      </div>
-    );
-  }
-
+  // Render the element that controls faxing the selected file. 
   render() {
     return (
       <div className='App-body'>
-        {this.renderFaxFile()}
+        <button className='fax-file' onClick={this.handleFileFax}>
+          Fax me!
+        </button>
+        {this.state.faxFileStatus}
       </div>
     );
   }
@@ -140,33 +138,40 @@ class FaxMachineApp extends React.Component {
   constructor(props) {
     super(props);
     this.state = { 
-      uploadedFile: null,
+      selectedFile: null,
     };
     
-    this.setUploadedFile = this.setUploadedFile.bind(this);
+    this.setSelectedFile = this.setSelectedFile.bind(this);
   }
 
-  // Handles file selection.
-  setUploadedFile(uploadedFile) {
+  // Sets the selected file.
+  // We pass this callback to FileSelector in order maintain file state at the top level.
+  setSelectedFile(selectedFile) {
     this.setState({
-      uploadedFile: uploadedFile,
+      selectedFile: selectedFile,
     }); 
   } 
 
   render() {
     return (
       <div className='App'>
+        {/* App header. This content is static and does not change. */}
         <header className='App-header'>
           <img src={logo} className='App-logo' alt='logo' />
           <p>I am a fax machine.</p>
         </header>
+        {/* Controls file selection and validation. This component allows a user to select a file,
+            validates the file, and updates the file information in the app state. */}
         <FileSelector
-          setUploadedFile={this.setUploadedFile}
+          setSelectedFile={this.setSelectedFile}
         />
+        {/* Controls file upload and faxing. */}
         <FileFaxer
-          uploadedFile={this.uploadedFile}
+          selectedFile={this.state.selectedFile}
         />
-        <p>
+        {/* App footer. This content is static and does not change. */}
+        <footer>
+          <p>
           <a
             className='App-link'
             href='https://github.com/asta-li/fax-machine'
@@ -175,7 +180,8 @@ class FaxMachineApp extends React.Component {
           >
             Code
           </a>
-        </p>
+          </p>
+        </footer>
       </div>
     );
   }
