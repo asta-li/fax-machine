@@ -5,6 +5,7 @@ import (
   "context"
   "encoding/json"
   "fmt"
+  guuid "github.com/google/uuid"
   "log"
   "net/http"
   "os"
@@ -12,7 +13,6 @@ import (
 
 // Contains file fax metadata.
 type FaxResponse struct {
-  Success bool
   Price float32
 }
 
@@ -52,8 +52,15 @@ func faxHandler(w http.ResponseWriter, r *http.Request){
     log.Println(value)
   }
 
+  // Store file in GCS.
+  bucketName := os.Getenv("BUCKET_NAME")
+  fileId := guuid.New()
+  fileName := "gs://" + bucketName + "/" + fileId.String()
+  storeGCS("I am a fax!", bucketName, fileName)
+  log.Println("Uploaded file to", fileName)
+
+  // Create successful response data.
   faxResponse := FaxResponse{
-    Success: true,
     Price: 3.19,
   }
 

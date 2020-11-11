@@ -1,4 +1,4 @@
-module main
+module fax-machine
 
 go 1.15
 

@@ -95,29 +95,32 @@ class FileFaxer extends React.Component {
       });
     } else {
       console.log('Faxing', this.props.selectedFile);
-
+      this.setState({
+        faxFileStatus: 'Faxing...',
+      });
+  
       const formData = new FormData(); 
       formData.append( 
         'fileToFax', 
         this.props.selectedFile,
         this.props.selectedFile.name,
       ); 
-       
+
       // Sends the file to the backend for payment processing, upload, and faxing.
       axios.post('/fax', formData)
-        .then(function (response) {
-          // TODO(asta): Update state and display response.
-          console.log('Received fax response', response);
-          console.log('success', response.data.Success);
-          console.log('price', response.data.Price);
+        .then((response) => {
+          console.log('Received successful fax response', response);
+          
+          this.setState({
+            faxFileStatus: 'Successfully faxed for $' + response.data.Price + '!',
+          });
         })
-        .catch(function (error) {
+        .catch((error) => {
           console.log(error);
+          this.setState({
+            faxFileStatus: 'Error: ' + error,
+          });
         });
-  
-      this.setState({
-        faxFileStatus: 'Successfully faxed!',
-      });
     }
   }
 
