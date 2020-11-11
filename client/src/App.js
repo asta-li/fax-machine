@@ -46,6 +46,11 @@ class FaxMachineApp extends React.Component {
   } 
      
   render() {
+    let selectedFileStatus = 'Please select a file';
+    if (this.state.selectedFile) {
+      selectedFileStatus = this.state.selectedFile.name;
+    }
+
     return (
       <div className='App'>
         <header className='App-header'>
@@ -53,14 +58,19 @@ class FaxMachineApp extends React.Component {
           <p>I am a fax machine.</p>
         </header>
         <div className='App-body'> 
-          <label className='Select'>
-            <input type='file' onChange={(event) => this.handleFileSelection} /> 
-            Select PDF
-          </label>
-          <button className='Select' onClick={this.handleFileUpload}>
-            Upload now
-          </button>
-          {this.state.uploadedFile}
+          <div>
+            <label className='Select'>
+              <input type='file' onChange={(event) => this.handleFileSelection} /> 
+              Select PDF
+            </label>
+            {selectedFileStatus}
+          </div>
+          <div>
+            <button className='Upload' onClick={this.handleFileUpload}>
+              Upload now
+            </button>
+            {this.state.uploadedFile}
+          </div>
         </div> 
         <p>
           <a
