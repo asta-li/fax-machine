@@ -1,7 +1,5 @@
-import axios from 'axios';
 import React from 'react';
 import PropTypes from 'prop-types';
-import Button from '@material-ui/core/Button';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import MLink from '@material-ui/core/Link';
 import Box from '@material-ui/core/Box';
@@ -9,9 +7,9 @@ import Typography from '@material-ui/core/Typography';
 import Container from '@material-ui/core/Container';
 import {withStyles} from '@material-ui/styles';
 
-import { FileSelector, FaxNumberInput } from './Input.js';
-import { FileFaxer } from './Submit.js';
-import { ReactComponent as Logo } from './logo.svg';
+import {FaxNumberInput, FileSelector} from './Input.js';
+import {FileFaxer} from './Submit.js';
+import {ReactComponent as Logo} from './logo.svg';
 import {Link, Route, Switch, useLocation} from 'react-router-dom';
 import SendingFax from "./components/SendingFax";
 
@@ -35,6 +33,7 @@ const styles = (theme) => ({
     margin: theme.spacing(3, 0, 2),
   },
 });
+
 // // TODO(asta): Debug StyledFileFaxer.
 // //
 // // FileFaxer.propTypes = {
@@ -83,7 +82,7 @@ const FaxMachineApp = () => {
             renders the first one that matches the current URL. */}
       <Switch>
         <Route exact path="/">
-          <Home action={query.get("action")} transactionId={query.get("transaction")} token={query.get("token")} payerId={query.get("PayerId=D")} />
+          <Home action={query.get("action")} transactionId={query.get("transactionId")} token={query.get("token")} payerId={query.get("PayerId")} />
         </Route>
 
       </Switch>

@@ -1,10 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	guuid "github.com/google/uuid"
-	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -22,14 +22,15 @@ type TxnMetadata struct {
 }
 
 // Handle fax requests.
-func uploadFileAndCreateOrder(file *multipart.File, faxNumber string) (string, error) {
+func uploadFileAndCreateOrder(file *multipart.File, faxNumber string,
+	requestUrl *url.URL/*this is necessary to construct the paypal oauth redirect link*/) (string, error) {
 	// Store file in GCS. also used as transactionId
 
 	// TODO: count how many pages the pdf is
 	pageCount := 4 // temporary placeholder for pageCount
 
 	fileName := guuid.New()
-	log.Println("Attempt to upload file")
+	log.Println("fax.uploadFileAndCreateOrder: Attempt to upload file")
 	if err := uploadGCS(*file, fileName.String()); err != nil {
 		return "", err
 	}
@@ -49,15 +50,16 @@ func uploadFileAndCreateOrder(file *multipart.File, faxNumber string) (string, e
 	}
 	err = writeMeta(txnMetadata)
 	if err != nil {
-		return "", fmt.Errorf("uploadFileAndCreateOrder writeMetadata failure: %v", err)
+		return "", fmt.Errorf("fax.uploadFileAndCreateOrder: uploadFileAndCreateOrder writeMetadata failure: %v", err)
 	}
 
 	log.Println("Uploaded file to", signedUrl)
 
 	//trigger paypal and pass in transaction id.
-	redirectUrl, err := CreatePaypalOrder(pageCount, txnMetadata)
+	redirectUrl, err := CreatePaypalOrder(pageCount, txnMetadata, requestUrl)
 	if err != nil {
-		log.Printf("error creating paypal order for transaction id %s\n", txnMetadata.TransactionId)
+		fmt.Errorf("error craeting paypal order for transaction id %s with error %s",  txnMetadata.TransactionId, err)
+		log.Println(err)
 		return "", err
 	}
 
@@ -69,27 +71,38 @@ func uploadFileAndCreateOrder(file *multipart.File, faxNumber string) (string, e
 func writeMeta(metadata TxnMetadata) error {
 
 	// TODO: emma to delete from disk temp files created
-	localMetaFilePath := fmt.Sprintf("./temp/%s.json", metadata.TransactionId)
+	//localMetaFilePath := fmt.Sprintf("./temp/%s.json", metadata.TransactionId)
 	gcsMetaFileName := getMetafileName(metadata.TransactionId)
 
-	jsonString, _ := json.Marshal(metadata)
-
-	// if temp directory doesn't exist, create it
-	if _, err := os.Stat("./temp"); os.IsNotExist(err) {
-		os.Mkdir("./temp", os.ModePerm)
-	}
-
-	ioutil.WriteFile(localMetaFilePath,
-		jsonString, os.ModePerm)
-
-	// Open local file.
-	f, err := os.Open(localMetaFilePath)
+	jsonString, err := json.Marshal(metadata)
 	if err != nil {
-		return fmt.Errorf("os.Open: %v", err)
+		return fmt.Errorf("fax.writeMeta: %s", err)
 	}
-	defer f.Close()
 
-	if err := uploadGCS(f, gcsMetaFileName); err != nil {
+	//// if temp directory doesn't exist, create it
+	//if _, err := os.Stat("./temp"); os.IsNotExist(err) {
+	//	os.Mkdir("./temp", os.ModePerm)
+	//} else if err != nil {
+	//	log.Printf("fax.writeMeta: error with create temp directory to store metadata %s\n", err)
+	//	return err
+	//}
+	//
+	//err2 := ioutil.WriteFile(localMetaFilePath,
+	//	jsonString, os.ModePerm)
+	//
+	//if err2 != nil {
+	//	log.Printf("fax.writeMeta: error with writing temp metadata to disk filename: %s\t error: %s", localMetaFilePath, err2)
+	//	return err2
+	//}
+	//
+	//// Open local file.
+	//f, err := os.Open(localMetaFilePath)
+	//if err != nil {
+	//	return fmt.Errorf("os.Open: %v", err)
+	//}
+	//defer f.Close()
+
+	if err := uploadGCS(bytes.NewReader(jsonString), gcsMetaFileName); err != nil {
 		log.Println("problem with uploading")
 		return err
 	}

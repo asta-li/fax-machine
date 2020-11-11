@@ -4,10 +4,13 @@ main: ./server
 
 includes:
   - fax.yaml
+  - payment.yaml
 
 env_variables:
   BUCKET_NAME: "fax-machine-295219.appspot.com"
   GCS_CREDENTIALS: "gcs_credentials.json"
+  GIN_MODE: "release"
+  IS_APPENGINE: "true"
 
 instance_class: B1
 

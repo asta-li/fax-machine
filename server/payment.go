@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-contrib/location"
 	"github.com/gin-gonic/gin"
 	"github.com/plutov/paypal/v3"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -18,12 +20,14 @@ var PER_PAGE_PRICE float64 = 1
 
 var orderStruct *paypal.Order //temp for testing
 
+type Paypal struct {
+	Account string `yaml:"PAYPAL_ACCOUNT"`
+	ClientId string	`yaml:"PAYPAL_CLIENT_ID"`
+	SecretKey string	`yaml:"PAYPAL_SECRET_KEY"`
+}
+
 type Credentials struct {
-	Paypal struct {
-		Account string `account`
-		ClientId string	`client_id`
-		SecretKey string	`secret_key`
-	}
+	Paypal Paypal `yaml:"env_variables"`
 }
 
 // set up the paypal client
@@ -36,7 +40,19 @@ func SetUpPaypalClient() (*paypal.Client, error) {
 
 	// if can't find environment variables for paypal client, then try the yaml file (for dev env)
 	if paypalClientId == "" || paypalSecretKey == "" {
-		paymentYaml := "./payment.yaml"
+
+		log.Println("no env variables found for payment credentials, using yaml")
+
+		var paymentYaml string
+		isProd := os.Getenv("IS_APPENGINE") != ""
+		if isProd {
+			paymentYaml =  "./payment.yaml"
+			log.Println("using prod credentials for payment")
+		} else {
+			log.Println("using dev credentials for payment")
+			paymentYaml =  "./payment_dev.yaml"
+		}
+
 		yamlFile, err := ioutil.ReadFile(paymentYaml)
 		if err != nil {
 			fmt.Printf("Error reading YAML file for payment creds: %s\n", err)
@@ -49,18 +65,17 @@ func SetUpPaypalClient() (*paypal.Client, error) {
 			return nil, err
 		}
 
-		fmt.Printf("Result: %v\n", credentials.Paypal.Account)
-
 		paypalClientId = credentials.Paypal.ClientId
 		paypalSecretKey = credentials.Paypal.SecretKey
 	}
 
-	client, err := paypal.NewClient(paypalClientId, paypalSecretKey, paypal.APIBaseSandBox)
-	client.SetLog(os.Stdout) // Set log to terminal stdout
-	if err != nil {
+	fmt.Printf("payment.SetUpPaypalClient: account id for paypal is: %v\n", credentials.Paypal.Account)
 
-		return nil, fmt.Errorf("there was an error getting paypal access token at %s, error %s\n", paypal.APIBaseSandBox, err)
+	client, err := paypal.NewClient(paypalClientId, paypalSecretKey, paypal.APIBaseSandBox)
+	if err != nil {
+		return nil, fmt.Errorf("there was an error to setting up the new clientat %s, error %s\n", paypal.APIBaseSandBox, err)
 	}
+	client.SetLog(os.Stdout) // Set log to terminal stdout
 
 	// this is a must do step in order for subsequent requests to paypal to go through
 	_, err = client.GetAccessToken()
@@ -77,17 +92,62 @@ func calculateCost(pageCount int) float64 {
 }
 
 // sends create order request to Paypal and returns te checkout link to be returned to the front end
-func CreatePaypalOrder(pageCount int, metadata TxnMetadata) (string, error) {
+func CreatePaypalOrder(pageCount int, metadata TxnMetadata, requestUrl *url.URL) (string, error) {
 
 	// variables to be passed in
 	purchaseValue := fmt.Sprintf("%4.2f", calculateCost(pageCount))
 	emailAddress := metadata.EmailAddress
 
+//https://0.0.10.44/:5500:c02d:fd00:cc44:26cd:cf2:b6e4,%20169.254.1.1
+	// possible valid request origin hosts
+	//appengineHost := "fax-machine-295219.wl.r.appspot.com"
+	//appengineCustomDomainHost := "2604:5500:c02d:fd00:cc44:26cd:cf2:b6e4, 169.254.1.1"
+	//domainCustomHost := "136.24.14.76, 169.254.1.1"
+	domainHost := "faxmachine.dev"
+	localhost := "localhost"
+
+	var currentHost = requestUrl.Hostname()
+	log.Printf("the current request host is: %s\n", currentHost)
+	// TODO: figure out a way given appengine's dynamic hostnames to prevent bad actions
+	//// if incoming request comes from outside of these hosts, then it's not a valid request. we don't allow
+	//// direct access to the API
+	//if currentHost != appengineHost && currentHost !=domainHost &&
+	//	currentHost != localhost && currentHost != appengineCustomDomainHost &&
+	//	currentHost != domainCustomHost {
+	//	return "", fmt.Errorf("unknow host: \"%s\" with error \"%s\"",
+	//		currentHost, errors.New("request from an unknown host. aborting request"))
+	//}
+
+	// if using appengineCustomDomainHost then the traffic is coming from our prod domain
+	if currentHost != localhost {
+		currentHost = domainHost
+	} else {
+		currentHost = fmt.Sprintf("%s:%s", defaultHost, defaultPort)
+	}
+
+	requestUrl.Host = currentHost
+	// reset the query params in case there were any that were passed in (there shouldn't)
+	requestUrl.RawQuery = ""
+
+	// construct redirect url from paypal, it usually looks something like
+	// http://localhost:3000/process?transaction=fbed1651-25a1-4c1c-bb6a-751ac4f613d9&token=10W91560AS205550U&PayerID=ECQGRHBEL4ML6
+	q := requestUrl.Query()
+	q.Set("action", "process")
+	q.Add("transactionId", metadata.TransactionId)
+	requestUrl.RawQuery = q.Encode()
+	processUrl := requestUrl.String()
+
+	q.Set("action", "cancel")
+	requestUrl.RawQuery = q.Encode()
+	cancelUrl := requestUrl.String()
+
+	log.Printf("redirect URL constructed: \n\tprocess URL: %s\n\tcancelURL: %s\n", processUrl, cancelUrl)
+
 	appContext := paypal.ApplicationContext{
 		BrandName:"faxmachine.dev",
-		// http://localhost:3000/process?transaction=fbed1651-25a1-4c1c-bb6a-751ac4f613d9&token=10W91560AS205550U&PayerID=ECQGRHBEL4ML6
-		CancelURL:fmt.Sprintf("http://localhost:3000/?action=cancel&transaction=%s", metadata.TransactionId),
-		ReturnURL:fmt.Sprintf("http://localhost:3000/?action=process&transaction=%s", metadata.TransactionId),
+
+		CancelURL:cancelUrl,
+		ReturnURL:processUrl,
 		ShippingPreference:paypal.ShippingPreferenceNoShipping,
 	}
 	payer := paypal.CreateOrderPayer{EmailAddress:emailAddress}
@@ -133,7 +193,7 @@ func getCreateOrderHandler(c *gin.Context) {
 		FaxNumber:     "3333333333",
 		SignedUrl:     "http://blah",
 		EmailAddress:  "sfsdf@sdf.com",
-	})
+	}, location.Get(c))
 
 	if err != nil {
 		panic(err) // TODO: fix this error handling
@@ -160,8 +220,8 @@ func getCaptureOrderHandler(c *gin.Context) {
 //	faxNumber := c.Request.PostFormValue("faxNumber")
 //	log.Println("Destination fax number:", faxNumber)
 
-	// Upload and fax the file.
-	//redirectUrl, err := uploadFileAndCreateOrder(&file, faxNumber)
+// Upload and fax the file.
+//redirectUrl, err := uploadFileAndCreateOrder(&file, faxNumber)
 //}
 
 func _main() {

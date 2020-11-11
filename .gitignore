@@ -15,7 +15,7 @@ gcs_credentials.json
 
 # Payment credentials
 payment.yaml
-payment.env
+payment_dev.yaml
 
 # temp files
 temp/

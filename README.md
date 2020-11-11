@@ -35,6 +35,12 @@ These credentials are used for [signing URLs](https://cloud.google.com/storage/d
 Set up secure credentials in `fax.env` for local development.
 Store the same credentials in `fax.yaml` for deployment.
 
+### Set up paypal credentials
+
+Set up secure credentials in `payment.env` for local development, use sandbox credentials here
+Store the same credentials in `payment.yaml` for deployment. use prod credentials here (if deploying to prod server)
+
+
 ### Set up environment variables
 
 Load into the local shell:

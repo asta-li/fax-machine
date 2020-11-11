@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/contrib/static"
+	location "github.com/gin-contrib/location"
 	"github.com/gin-gonic/gin"
 	"github.com/plutov/paypal/v3"
 	"log"
@@ -19,11 +20,13 @@ type FaxResponse struct {
 	Price float32
 }
 
+var defaultPort = "3000"
+var defaultHost = "localhost"
+
 // Upload pdf
 func uploadHandlerGin(c *gin.Context) {
 
 	log.Println("Upload pdf")
-
 	// TODO: Perform file validation.
 	file, header, _ := c.Request.FormFile("file")
 	log.Println("Filename:", header.Filename)
@@ -31,7 +34,7 @@ func uploadHandlerGin(c *gin.Context) {
 	log.Println("Destination fax number:", faxNumber)
 
 	// Upload and fax the file.
-	redirectUrl, err := uploadFileAndCreateOrder(&file, faxNumber)
+	redirectUrl, err := uploadFileAndCreateOrder(&file, faxNumber, location.Get(c))
 	if err != nil {
 		panic(err) // TODO: return proper http error code and fix error handling
 	}
@@ -46,7 +49,7 @@ func uploadHandlerGin(c *gin.Context) {
 // Handle fax requests.
 func faxHandler(c *gin.Context) {
 
-	log.Println("Handling fax request")
+	log.Println("main.faxHandler: Handling fax request")
 
 	transactionId := c.Request.PostFormValue("transactionId")
 
@@ -60,7 +63,7 @@ func faxHandler(c *gin.Context) {
 		return
 	}
 
-	log.Println("TransactionId:", transactionId)
+	log.Println("main.faxHandler: TransactionId:", transactionId)
 
 	// Upload and fax the file.
 	faxId, err := faxFile(transactionId)
@@ -138,6 +141,11 @@ func faxWebhookHandler(c *gin.Context) {
 
 func main() {
 
+	// print file names and line numbers
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+
+
 	// set up paypal client as a global variable
 	client, err := SetUpPaypalClient()
 	if err != nil {
@@ -148,6 +156,15 @@ func main() {
 
 	// GIN
 	router := gin.Default()
+	router.AppEngine = true
+
+	// set up location middleware. Default to localhost & port if it cannot ascertain request host / port
+	// https://github.com/gin-contrib/location
+	locationConfig := location.DefaultConfig()
+	locationConfig.Host = fmt.Sprintf("%s:%s", defaultHost, defaultPort)
+	router.Use(location.New(locationConfig))
+
+	// serve the static site with the static middleware
 	router.Use(static.Serve("/", static.LocalFile("./client/build", true)))
 
 	// storing up to 5MB in memory.
@@ -161,7 +178,6 @@ func main() {
 			})
 		})
 		api.POST("/upload", uploadHandlerGin)
-		api.POST("/fax-id", faxHandler)
 		api.POST("/fax", faxHandler)
 		api.GET("/fax-status", faxQueryHandler)
 
@@ -178,7 +194,7 @@ func main() {
 	// defaulting to port 3000.
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "3000"
+		port = defaultPort
 	}
 	router.Run(":" + port)
 

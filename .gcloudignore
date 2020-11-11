@@ -26,3 +26,12 @@
 
 # Node.js dependencies:
 client/node_modules/
+
+# jetbrains IDE files
+.idea
+
+# temp files
+temp/
+
+# dev env specific files
+payment_dev.yaml
