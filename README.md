@@ -54,7 +54,7 @@ From project root:
 cd client
 npm run build
 cd ..
-go run server/main.go
+go run server/main.go server/fax.go
 ```
 
 ### Run in React development mode
