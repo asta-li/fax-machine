@@ -103,10 +103,8 @@ class FileFaxer extends React.Component {
   
       // Create form containing the file data.
       const formData = new FormData(); 
-      formData.append( 
-        'file', 
-        this.props.selectedFile,
-      ); 
+      formData.append('file', this.props.selectedFile); 
+      formData.append('faxNumber', this.props.faxNumber); 
 
       const config = {     
         headers: { 'content-type': 'multipart/form-data' }
@@ -148,6 +146,7 @@ class FaxMachineApp extends React.Component {
     super(props);
     this.state = { 
       selectedFile: null,
+      faxNumber: '+16504344807',
     };
     
     this.setSelectedFile = this.setSelectedFile.bind(this);
@@ -177,6 +176,7 @@ class FaxMachineApp extends React.Component {
         {/* Controls file upload and faxing. */}
         <FileFaxer
           selectedFile={this.state.selectedFile}
+          faxNumber={this.state.faxNumber}
         />
         {/* App footer. This content is static and does not change. */}
         <footer>
