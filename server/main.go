@@ -1,17 +1,18 @@
 package main
 
 import (
-  "cloud.google.com/go/storage"
-  "context"
-  "encoding/json"
-  "fmt"
-  guuid "github.com/google/uuid"
-  "io"
-  "log"
-  "mime/multipart"
-  "net/http"
-  "os"
-  "time"
+    "cloud.google.com/go/storage"
+    "context"
+    "fmt"
+    "github.com/gin-gonic/contrib/static"
+    "github.com/gin-gonic/gin"
+    guuid "github.com/google/uuid"
+    "io"
+    "log"
+    "mime/multipart"
+    "net/http"
+    "os"
+    "time"
 )
 
 // Contains file fax metadata.
@@ -46,71 +47,76 @@ func storeGCS(dataToWrite multipart.File, bucketName string, fileName string) er
   return nil
 }
 
+
 // Handle fax requests.
-func faxHandler(w http.ResponseWriter, r *http.Request){
-  log.Println("Handling fax request")
-  // TODO(asta): Improve error handling.
+func faxHandlerGin(c *gin.Context) {
 
-  // TODO(asta): Perform server-side file validation.
-  // Parse form, storing up to 5MB in memory.
-  if err := r.ParseMultipartForm(5 << 20); err != nil {
-    log.Fatal(err)
-  }
+    log.Println("Handling fax request")
+    // TODO(asta): Improve error handling.
 
-  file, header, err := r.FormFile("file")
-  defer file.Close()
-  log.Println(header.Header)
+    // TODO(asta): Perform server-side file validation.
 
-  // Store file in GCS.
-  bucketName := os.Getenv("BUCKET_NAME")
-  fileName := guuid.New()
-  storeGCS(file, bucketName, fileName.String())
-  filePath := "gs://" + bucketName + "/" + fileName.String()
-  log.Println("Uploaded file to", filePath)
+    file, header, _ := c.Request.FormFile("file")
+    log.Println(header.Filename)
+
+    //// Upload the file to specific dst.
+    //c.SaveUploadedFile(file, dst)
 
 
-  // TODO(asta): Fax the file.
+    // Store file in GCS.
+    bucketName := os.Getenv("BUCKET_NAME")
+    fileName := guuid.New()
+    storeGCS(file, bucketName, fileName.String())
+    filePath := "gs://" + bucketName + "/" + fileName.String()
+    log.Println("Uploaded file to", filePath)
 
 
-  // TODO(asta): Delete the file from GCS.
+    // TODO(asta): Fax the file.
 
 
-  // Create successful response data.
-  faxResponse := FaxResponse{
-    Price: 3.19,
-  }
+    // TODO(asta): Delete the file from GCS.
 
-  // Serialize and send the response data.
-  faxResponseJson, err := json.Marshal(faxResponse)
-  if err != nil{
-    panic(err)
-  }
 
-  log.Println("Sending fax response")
-  w.WriteHeader(http.StatusOK)
-  w.Header().Set("Content-Type","application/json")
-  w.Write(faxResponseJson)
+    // Create successful response data.
+    faxResponse := FaxResponse{
+        Price: 3.19,
+    }
+
+    // Serialize and send the response data.
+    //faxResponseJson, err := json.Marshal(faxResponse)
+    //if err != nil{
+    //    panic(err)
+    //}
+
+    log.Println("Sending fax response")
+
+    c.JSON(http.StatusOK, faxResponse)
+
+    c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", header.Filename))
+
 }
 
 func main() {
-    log.Println("Starting server")
 
-    // Serve the static webpage.
-    buildHandler := http.FileServer(http.Dir("client/build"))
-    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        buildHandler.ServeHTTP(w, r)
-    })
+    // GIN
+    router := gin.Default()
+    router.Use(static.Serve("/", static.LocalFile("./client/build", true)))
 
-    // Handle fax requests.
-    http.HandleFunc("/fax", faxHandler)
-
-    // Start the server, defaulting to port 3000.
-    port := os.Getenv("PORT")
-    if port == "" {
-        port = "3000"
+    // storing up to 5MB in memory.
+    router.MaxMultipartMemory = 5 << 20  // 5 MiB
+    // Setup route group for the API
+    api := router.Group("/api")
+    {
+        api.GET("/", func(c *gin.Context) {
+            c.JSON(http.StatusOK, gin.H {
+                "message": "pong",
+            })
+        })
+        api.POST("/fax", faxHandlerGin)
     }
-    log.Println("Running server on port", port)
-    if err := http.ListenAndServe(":"+port, nil); err != nil {
-        log.Fatal(err)
-    }
+
+
+    router.Run(":3000")
+
+
 }

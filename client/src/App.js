@@ -113,7 +113,7 @@ class FileFaxer extends React.Component {
       }
 
       // Sends the file to the backend for payment processing, upload, and faxing.
-      axios.post('/fax', formData, config)
+      axios.post('/api/fax', formData, config)
         .then((response) => {
           console.log('Received successful fax response', response);
           
