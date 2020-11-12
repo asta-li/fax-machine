@@ -79,3 +79,10 @@ cd ..
 gcloud app deploy
 ```
 
+
+
+## Formatting
+```bash
+gofmt -w server/main.go
+```
+
