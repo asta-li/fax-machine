@@ -6,9 +6,9 @@
 # Ignore npm-installed modules.
 ./client/node_modules 
 
-# Twilio credentials.
-twilio.env
-twilio.yaml
+# Programmable fax credentials.
+fax.env
+fax.yaml
 
 
 # Payment credentials

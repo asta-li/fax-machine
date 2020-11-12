@@ -25,16 +25,10 @@ gcloud init
 gcloud auth application-default login
 ```
 
-### Set up Twilio credentials
+### Set up programmable fax credentials
 
-Follow the [instructions](https://www.twilio.com/docs/usage/secure-credentials) to set up secure
-credentials in `twilio.env` for local development.
-Store the same credentials in `twilio.yaml` for deployment.
-```
-env_variables:
-  TWILIO_ACCOUNT_SID: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-  TWILIO_AUTH_TOKEN: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-```
+Set up secure credentials in `fax.env` for local development.
+Store the same credentials in `fax.yaml` for deployment.
 
 ### Set up environment variables
 

@@ -3,7 +3,6 @@ package main
 import (
     "cloud.google.com/go/storage"
     "context"
-    "encoding/json"
     "fmt"
     guuid "github.com/google/uuid"
     "io"
@@ -18,8 +17,6 @@ import (
 
 // Handle fax requests.
 func uploadAndFaxFile(file *multipart.File, faxNumber string) error {
-    log.Println("Handling fax request")
-
     // Store file in GCS.
     bucketName := os.Getenv("BUCKET_NAME")
     fileName := guuid.New()
@@ -45,6 +42,7 @@ func uploadAndFaxFile(file *multipart.File, faxNumber string) error {
 
 // Uploads an object to GCS.
 // See https://cloud.google.com/storage/docs/uploading-objects#storage-upload-object-go.
+// TODO(asta): Update permissions: https://cloud.google.com/storage/docs/access-control/signed-urls
 func uploadGCS(dataToWrite *multipart.File, bucketName string, fileName string) error {
     // Create GCS connection
     ctx := context.Background()
@@ -89,28 +87,33 @@ func deleteGCS(bucketName string, fileName string) error {
     return nil
 }
 
-// Fax a file via GCS.
+// Fax a file via Telnyx Programmable Fax.
 func faxUploadedFile(fileUrl string, sendToNumber string) error {
-    // Set Twilio account credentials.
-    accountSid := os.Getenv("TWILIO_ACCOUNT_SID")
-    authToken := os.Getenv("TWILIO_AUTH_TOKEN")
+    // Set Telnyx account credentials.
+    sendFromNumber := os.Getenv("FAX_FROM_NUMBER")
+    appId := os.Getenv("TELNYX_APP_ID")
+    apiKey := os.Getenv("TELNYX_API_KEY")
+    bearer := "Bearer " + apiKey
 
     // Populate message data.
     msgData := url.Values{}
-    msgData.Set("To", sendToNumber)
-    msgData.Set("From", "+12184801688")
-    msgData.Set("MediaUrl", fileUrl)
+    msgData.Set("connection_id", appId)
+    msgData.Set("to", sendToNumber)
+    msgData.Set("from", sendFromNumber)
+    // TODO(asta): Use the user-given file URL after handling permissions.
+    // msgData.Set("MediaUrl", fileUrl)
+    msgData.Set("media_url", "https://www.twilio.com/docs/documents/25/justthefaxmaam.pdf")
     msgDataReader := *strings.NewReader(msgData.Encode())
 
     // Format and send the fax request.
     client := &http.Client{}
-    urlStr := "https://fax.twilio.com/v1/Faxes"
+    urlStr := "https://api.telnyx.com/v2/faxes"
     req, err := http.NewRequest("POST", urlStr, &msgDataReader)
     if err != nil {
         return err
     }
-    req.SetBasicAuth(accountSid, authToken)
-    req.Header.Add("Accept", "application/json")
+    req.Header.Add("Authorization", bearer)
+    //req.Header.Add("Accept", "application/json")
     req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
     resp, err := client.Do(req)
     if err != nil {
@@ -120,17 +123,10 @@ func faxUploadedFile(fileUrl string, sendToNumber string) error {
 
     // Handle the response.
     if (resp.StatusCode < 200 || resp.StatusCode >= 300) {
-        fmt.Println("Post request to Twilio unsuccessful:", resp.Status);
-        // TODO(asta): Return error.
+        return fmt.Errorf("Unsuccessful fax request", resp.Status)
     }
 
-    var data map[string]interface{}
-    decoder := json.NewDecoder(resp.Body)
-    if err := decoder.Decode(&data); err != nil {
-        return err
-    }
-    fmt.Println("StatusCode", resp.StatusCode)
-    fmt.Println("Twilio response", data)
+    // Record fax_id from response - this will be needed to match up the webhook response.
     return nil
 }
 

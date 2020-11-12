@@ -20,9 +20,9 @@ func faxHandlerGin(c *gin.Context) {
 
     // TODO: Perform file validation.
     file, header, _ := c.Request.FormFile("file")
-    log.Println("Filename", header.Filename)
+    log.Println("Filename:", header.Filename)
     faxNumber := c.Request.PostFormValue("faxNumber")
-    log.Println("Destination fax number", faxNumber)
+    log.Println("Destination fax number:", faxNumber)
 
     //// Upload the file to specific dst.
     //c.SaveUploadedFile(file, dst)
@@ -45,6 +45,26 @@ func faxHandlerGin(c *gin.Context) {
 
 }
 
+// TODO(asta): This doesn't work yet.
+// Handle fax status webhook.
+// Responses: fax.queued, fax.media.processed, fax.sending.started, fax.delivered, fax.failed
+// https://developers.telnyx.com/docs/v2/programmable-fax/receiving-webhooks
+func faxCompleteHandler(c *gin.Context) {
+    log.Println("Handling fax status webhook")
+    // TODO(asta): Associate this webhook with a previously sent fax.
+    // Note that these hooks may arrive out of order.
+    // We'll have to maintain some state about fax IDs and the client will have to poll for results.
+
+    // TODO(asta): How to parse this nested JSON structure? Make JSON data structure.
+    responseEvent := c.PostForm("data")
+    log.Println("Response:", responseEvent)
+
+    if responseEvent == "fax.delivered" {
+        // TODO(asta): The client needs to know that the fax was delivered.
+        log.Println("Fax completed!")
+    }
+}
+
 func main() {
 
     // GIN
@@ -62,6 +82,7 @@ func main() {
             })
         })
         api.POST("/fax", faxHandlerGin)
+        api.POST("/fax-complete", faxCompleteHandler)
     }
 
 

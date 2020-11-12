@@ -71,7 +71,10 @@ class FileSelector extends React.Component {
     return (
       <div className='App-body'>
         <label className='select-file'>
-          <input type='file' onChange={(event) => this.handleFileSelection(event)} /> 
+          <input
+            type='file'
+            accept='.pdf,application/pdf'
+            onChange={(event) => this.handleFileSelection(event)} /> 
           Select PDF
         </label>
         {this.state.selectedFileStatus}
@@ -146,6 +149,8 @@ class FaxMachineApp extends React.Component {
     super(props);
     this.state = { 
       selectedFile: null,
+      // TODO(asta): For now, hard-code this destination phone number.
+      // Update to allow user to set this fax number.
       faxNumber: '+16504344807',
     };
     
