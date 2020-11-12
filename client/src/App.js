@@ -1,8 +1,32 @@
 import axios from 'axios'; 
 import React from 'react';
+import PropTypes from 'prop-types';
+import Button from '@material-ui/core/Button';
+import CssBaseline from '@material-ui/core/CssBaseline';
+import TextField from '@material-ui/core/TextField';
+import Link from '@material-ui/core/Link';
+import Box from '@material-ui/core/Box';
+import Typography from '@material-ui/core/Typography';
+import Container from '@material-ui/core/Container';
+import { withStyles } from '@material-ui/styles';
+import { makeStyles } from '@material-ui/core/styles';
 
-import logo from './logo.svg';
-import './App.css';
+// Custom styles.
+const styles = makeStyles((theme) => ({
+  paper: {
+    marginTop: theme.spacing(8),
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  form: {
+    width: '100%', // Fix IE 11 issue.
+    marginTop: theme.spacing(1),
+  },
+  submit: {
+    margin: theme.spacing(3, 0, 2),
+  },
+}));
 
 // TODO(asta): Perform additional client-side validation,
 // such as checking for JavaScript in the file.
@@ -69,16 +93,63 @@ class FileSelector extends React.Component {
   // Render the element that controls file seletion. 
   render() {
     return (
-      <div className='App-body'>
-        <label className='select-file'>
-          <input
-            type='file'
-            accept='.pdf,application/pdf'
-            onChange={(event) => this.handleFileSelection(event)} /> 
+      <React.Fragment> 
+        <Button
+          variant="contained"
+          component="label"
+        >
           Select PDF
-        </label>
+          <input
+            type="file"
+            accept='.pdf,application/pdf'
+            style={{ display: "none" }}
+            onChange={(event) => this.handleFileSelection(event)} 
+          />
+        </Button>
         {this.state.selectedFileStatus}
-      </div>
+      </React.Fragment>
+    );
+  }
+}
+
+// Controls fax number input.
+class FaxNumberInput extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      faxNumberStatus: "",
+    };
+  }
+  
+  // Update and validate the input fax number.
+  handleInput(event) {
+    // TODO: Read fax number from event and validate.
+    const faxNumber = "12345";
+    const faxNumberStatus = "Okay!"
+    this.setState({
+      faxNumberStatus: faxNumberStatus,
+    });
+    this.props.setFaxNumber(faxNumber);
+  }
+
+  // Render the element that controls file seletion. 
+  render() {
+    return (
+      <React.Fragment>
+        <TextField
+          variant="outlined"
+          margin="normal"
+          required
+          fullWidth
+          id="fax"
+          label="Fax Number"
+          name="fax"
+          autoComplete="fax"
+          autoFocus
+          onClick={(event) => this.handleInput(event)}
+        />
+        {this.state.faxNumberStatus}
+      </React.Fragment>
     );
   }
 }
@@ -133,72 +204,108 @@ class FileFaxer extends React.Component {
 
   // Render the element that controls faxing the selected file. 
   render() {
+    console.log(this.props.classes);
+    const { classes } = this.props;
     return (
-      <div className='App-body'>
-        <button className='fax-file' onClick={this.handleFileFax}>
+      <React.Fragment>
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          color="primary"
+          className={classes.submit}
+          onClick={this.handleFileFax}
+        >
           Fax me!
-        </button>
+        </Button>
+        {/* TODO(asta): Display status and errors persistently. Use Redux? */}
         {this.state.faxFileStatus}
-      </div>
+      </React.Fragment>
     );
   }
+}
+
+const StyledFileFaxer = withStyles(styles)(FileFaxer);
+
+function Copyright() {
+  return (
+    <Typography variant="body2" color="textSecondary" align="center">
+      {'Copyright © '}
+      <Link color="inherit" href="https://github.com/asta-li/fax-machine">
+        Fax Machine Dev
+      </Link>{' '}
+      {new Date().getFullYear()}
+      {'.'}
+    </Typography>
+  );
 }
 
 class FaxMachineApp extends React.Component {
   constructor(props) {
     super(props);
+    
     this.state = { 
       selectedFile: null,
-      // TODO(asta): For now, hard-code this destination phone number.
-      // Update to allow user to set this fax number.
-      faxNumber: '+16504344807',
+      faxNumber: '',
     };
     
     this.setSelectedFile = this.setSelectedFile.bind(this);
+    this.setFaxNumber = this.setFaxNumber.bind(this);
   }
 
   // Sets the selected file.
-  // We pass this callback to FileSelector in order maintain file state at the top level.
+  // We pass this callback to FileSelector in order maintain state at the top level.
   setSelectedFile(selectedFile) {
     this.setState({
       selectedFile: selectedFile,
     }); 
   } 
+  
+  // Sets the fax number.
+  // We pass this callback to FaxNumberInput in order maintain state at the top level.
+  setFaxNumber(faxNumber) {
+    this.setState({
+      faxNumber: faxNumber,
+    }); 
+  } 
 
   render() {
+    const { classes } = this.props;
     return (
-      <div className='App'>
-        {/* App header. This content is static and does not change. */}
-        <header className='App-header'>
-          <img src={logo} className='App-logo' alt='logo' />
-          <p>I am a fax machine.</p>
-        </header>
-        {/* Controls file selection and validation. This component allows a user to select a file,
-            validates the file, and updates the file information in the app state. */}
-        <FileSelector
-          setSelectedFile={this.setSelectedFile}
-        />
-        {/* Controls file upload and faxing. */}
-        <FileFaxer
-          selectedFile={this.state.selectedFile}
-          faxNumber={this.state.faxNumber}
-        />
-        {/* App footer. This content is static and does not change. */}
-        <footer>
-          <p>
-          <a
-            className='App-link'
-            href='https://github.com/asta-li/fax-machine'
-            target='_blank'
-            rel='noopener noreferrer'
-          >
-            Code
-          </a>
-          </p>
-        </footer>
-      </div>
+      <Container component="main" maxWidth="xs">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+        <CssBaseline />
+        <div className={classes.paper}>
+          <Typography component="h1" variant="h5">
+            Sign in
+          </Typography>
+          <form className={classes.form} noValidate>
+            {/* Controls fax number input. */}
+            <FaxNumberInput
+              setFaxNumber={this.setFaxNumber}
+            />
+            {/* Controls file selection and validation. This component allows a user to select a file,
+                validates the file, and updates the file information in the app state. */}
+            <FileSelector
+              setSelectedFile={this.setSelectedFile}
+            />
+            {/* Controls file upload and faxing. */}
+            <StyledFileFaxer
+              selectedFile={this.state.selectedFile}
+              faxNumber={this.state.faxNumber}
+            />
+          </form>
+        </div>
+        <Box mt={8}>
+          <Copyright />
+        </Box>
+      </Container>
     );
   }
 }
 
-export default FaxMachineApp;
+FaxMachineApp.propTypes = {
+  classes: PropTypes.object.isRequired,
+};
+
+export default withStyles(styles)(FaxMachineApp);
