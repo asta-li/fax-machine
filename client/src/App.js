@@ -79,7 +79,7 @@ class FileFaxer extends React.Component {
 
   // Render the element that controls faxing the selected file. 
   render() {
-    const { classes } = this.props;
+    // const { classes } = this.props;
     return (
       <React.Fragment>
         {/* TODO(asta): Make this a type="submit" button and correctly route the form */}
@@ -87,7 +87,7 @@ class FileFaxer extends React.Component {
           fullWidth
           variant="contained"
           color="primary"
-          className={classes.submit}
+          /*className={classes.submit}*/
           onClick={this.handleFileFax}
         >
           Fax me!
@@ -151,11 +151,11 @@ class FaxMachineApp extends React.Component {
       <Container component="main" maxWidth="xs">
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
         <CssBaseline />
-        <div className={classes.paper}>
+          <div className={classes.paper}>
           <Typography component="h1" variant="h5">
             Sign in
           </Typography>
-          <form className={classes.form}>
+            <form className={classes.form}>
             {/* Controls fax number input. */}
             <FaxNumberInput
               setFaxNumber={this.setFaxNumber}
@@ -166,7 +166,8 @@ class FaxMachineApp extends React.Component {
               setSelectedFile={this.setSelectedFile}
             />
             {/* Controls file upload and faxing. */}
-            <StyledFileFaxer
+            {/*<StyledFileFaxer*/}
+            <FileFaxer
               selectedFile={this.state.selectedFile}
               faxNumber={this.state.faxNumber}
             />

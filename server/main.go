@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"fmt"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
@@ -87,6 +88,12 @@ func main() {
 	// Fax status and completion webhook.
 	router.POST("/fax-complete", faxCompleteHandler)
 
-	router.Run(":3000")
+    // Start the server. Use the environment PORT (e.g. set by Google App Engine),
+    // defaulting to port 3000.
+    port := os.Getenv("PORT")
+    if port == "" {
+        port = "3000"
+    }
+	router.Run(":" + port)
 
 }
