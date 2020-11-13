@@ -3,7 +3,7 @@ runtime: go114
 main: ./server
 
 includes:
-  - twilio.yaml
+  - fax.yaml
 
 env_variables:
   BUCKET_NAME: "fax-machine-295219.appspot.com"

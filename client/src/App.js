@@ -44,8 +44,13 @@ class FileFaxer extends React.Component {
       this.setState({
         faxFileStatus: 'Select a file to fax',
       });
+    } else if (!this.props.faxNumber) {
+      this.setState({
+        faxFileStatus: 'Enter a valid fax number',
+      });
     } else {
       console.log('Faxing', this.props.selectedFile);
+      console.log('Destination', this.props.faxNumber);
       this.setState({
         faxFileStatus: 'Faxing...',
       });
@@ -65,7 +70,7 @@ class FileFaxer extends React.Component {
           console.log('Received successful fax response', response);
           
           this.setState({
-            faxFileStatus: 'Successfully faxed for $' + response.data.Price + '!',
+            faxFileStatus: 'Successfully faxed ' + response.data.FaxId + ' for $' + response.data.Price + '!',
           });
         })
         .catch((error) => {
@@ -98,7 +103,13 @@ class FileFaxer extends React.Component {
   }
 }
 
-const StyledFileFaxer = withStyles(styles)(FileFaxer);
+// TODO(asta): Debug StyledFileFaxer.
+//
+// FileFaxer.propTypes = {
+//   classes: PropTypes.object.isRequired,
+// };
+// 
+// const StyledFileFaxer = withStyles(styles)(FileFaxer);
 
 function Copyright() {
   return (
@@ -118,7 +129,7 @@ class FaxMachineApp extends React.Component {
     super(props);
     this.state = { 
       selectedFile: null,
-      faxNumber: '',
+      faxNumber: '+16504344807',
     };
     
     this.setSelectedFile = this.setSelectedFile.bind(this);

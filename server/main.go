@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"fmt"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -11,6 +10,7 @@ import (
 
 // Contains file fax metadata.
 type FaxResponse struct {
+    FaxId string
 	Price float32
 }
 
@@ -25,45 +25,72 @@ func faxHandlerGin(c *gin.Context) {
 	faxNumber := c.Request.PostFormValue("faxNumber")
 	log.Println("Destination fax number:", faxNumber)
 
-	//// Upload the file to specific dst.
-	//c.SaveUploadedFile(file, dst)
-
 	// Upload and fax the file.
-	if err := uploadAndFaxFile(&file, faxNumber); err != nil {
+	faxId, err := uploadAndFaxFile(&file, faxNumber)
+	if err != nil {
 		panic(err)
 	}
 
 	// Create successful response data.
 	faxResponse := FaxResponse{
+        FaxId: faxId,
 		Price: 3.19,
 	}
 
 	log.Println("Sending fax response")
-
 	c.JSON(http.StatusOK, faxResponse)
-
-	c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", header.Filename))
 
 }
 
-// TODO(asta): This doesn't work yet.
+// Fax status query data structure.
+type FaxStatusQuery struct {
+    FaxId  string `form:"id" json:"id"`
+}
+
+// Handle fax status queries.
+// https://developers.telnyx.com/docs/api/v2/programmable-fax/Programmable-Fax-Commands#ViewFax
+func faxQueryHandler(c *gin.Context) {
+	log.Println("Handling fax status query")
+    var msg FaxStatusQuery
+    if err := c.BindJSON(&msg); err != nil {
+        log.Fatal(err)
+    }
+
+    status, err := getFaxStatus(msg.FaxId)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    c.JSON(http.StatusOK, gin.H{"status": status})
+}
+
+// Fax status webhook data structure.
+type FaxStatusWebhook struct {
+    Data  FaxStatusWebhookData   `json:"data"`
+}
+
+type FaxStatusWebhookData struct {
+    FaxId        string `json:"id"`
+    EventType string `json:"event_type"`
+    Payload   FaxStatusWebhookPayload `json:"payload"`
+}
+
+type FaxStatusWebhookPayload struct {
+    FileUrl   string `json:"original_media_url"`
+}
+
 // Handle fax status webhook.
-// Responses: fax.queued, fax.media.processed, fax.sending.started, fax.delivered, fax.failed
 // https://developers.telnyx.com/docs/v2/programmable-fax/receiving-webhooks
-func faxCompleteHandler(c *gin.Context) {
+func faxWebhookHandler(c *gin.Context) {
 	log.Println("Handling fax status webhook")
-	// TODO(asta): Associate this webhook with a previously sent fax.
-	// Note that these hooks may arrive out of order.
-	// We'll have to maintain some state about fax IDs and the client will have to poll for results.
+    var msg FaxStatusWebhook
+    if err := c.BindJSON(&msg); err != nil {
+        log.Fatal(err)
+    }
 
-	// TODO(asta): How to parse this nested JSON structure? Make JSON data structure.
-	responseEvent := c.PostForm("data")
-	log.Println("Response:", responseEvent)
-
-	if responseEvent == "fax.delivered" {
-		// TODO(asta): The client needs to know that the fax was delivered.
-		log.Println("Fax completed!")
-	}
+    if err := handleFaxWebhook(msg); err != nil {
+        log.Fatal(err)
+    }
 }
 
 func main() {
@@ -83,10 +110,11 @@ func main() {
 			})
 		})
 		api.POST("/fax", faxHandlerGin)
+		api.GET("/fax-status", faxQueryHandler)
 	}
 
 	// Fax status and completion webhook.
-	router.POST("/fax-complete", faxCompleteHandler)
+	router.POST("/fax-webhook", faxWebhookHandler)
 
     // Start the server. Use the environment PORT (e.g. set by Google App Engine),
     // defaulting to port 3000.

@@ -80,3 +80,10 @@ gcloud app deploy
 gofmt -w server/main.go
 ```
 
+## Test Telnyx Fax Webhooks
+
+See https://developers.telnyx.com/docs/api/v2/programmable-fax/Programmable-Fax-Commands
+```
+export TEST_RESPONSE='{ "data": [ { "connection_id": "c-1", "created_at": "2020-05-05T09:59:12", "from": "+123", "id": "0ccc7b54-4df3-4bca-a65a-3da1ecc777f0", "media_url": "http://www.example.com/fax.pdf", "quality": "high", "record_type": "fax", "status": "queued", "store_media": true, "stored_media_url": "https://s3.amazonaws.com/faxes-dev/user-1/cf4a6b52-bf8e-4945-9f49-611d0d2b083b.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=xxxxxxxxxx%2F20200505%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20200505T095917Z&X-Amz-Expires=7200&X-Amz-SignedHeaders=host&X-Amz-Signature=fac2af40464fcc77673ad762db86e34f9c1b91a82699b5578c5327f53874df51", "to": "+456", "updated_at": "2020-05-05T09:59:12", "webhook_failover_url": "", "webhook_url": "http://www.example.com/webhooks" } ], "meta": { "page_number": 2, "page_size": 1, "total_pages": 3, "total_results": 3 } }'
+curl -X POST -H "Content-Type: application/json"  -d '${TEST_RESPONSE}'  http://localhost:3000/fax-complete
+```
