@@ -10,6 +10,8 @@
 fax.env
 fax.yaml
 
+# Google Cloud Storage credentials.
+gcs_credentials.json
 
 # Payment credentials
 credentials.yaml

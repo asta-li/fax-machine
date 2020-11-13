@@ -7,6 +7,7 @@ includes:
 
 env_variables:
   BUCKET_NAME: "fax-machine-295219.appspot.com"
+  GCS_CREDENTIALS: "gcs_credentials.json"
 
 instance_class: B1
 

@@ -53,7 +53,8 @@ func faxQueryHandler(c *gin.Context) {
 	log.Println("Handling fax status query")
     var msg FaxStatusQuery
     if err := c.BindJSON(&msg); err != nil {
-        log.Fatal(err)
+        log.Println(err)
+        c.JSON(http.StatusBadRequest, gin.H{"status": "Unable to parse JSON request"})
     }
 
     status, err := getFaxStatus(msg.FaxId)
