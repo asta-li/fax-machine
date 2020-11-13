@@ -128,17 +128,21 @@ class FaxMachineApp extends React.Component {
   // Sets the selected file.
   // We pass this callback to FileSelector in order maintain state at the top level.
   setSelectedFile(selectedFile) {
-    this.setState({
-      selectedFile: selectedFile,
-    }); 
+    if (selectedFile) {
+      this.setState({
+        selectedFile: selectedFile,
+      }); 
+    }
   } 
   
   // Sets the fax number.
   // We pass this callback to FaxNumberInput in order maintain state at the top level.
   setFaxNumber(faxNumber) {
-    this.setState({
-      faxNumber: faxNumber,
-    }); 
+    if (faxNumber) {
+      this.setState({
+        faxNumber: faxNumber,
+      }); 
+    }
   } 
 
   render() {

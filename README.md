@@ -48,12 +48,12 @@ From project root:
 cd client
 npm run build
 cd ..
-go run server/main.go server/fax.go
+go run server/*
 ```
 
 ### Run in React development mode
 
-After starting the Go server, run the following to run the client code in development mode.
+Run the client code in development mode.
 
 From project root:
 ```
