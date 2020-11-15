@@ -80,13 +80,21 @@ gcloud app deploy
 ```
 
 ## Formatting
+
+Golang formatter
 ```bash
 gofmt -w server/*.go
 ```
 
+Javascript formatter
 ```bash
 cd client
 prettier src/*.js --write
+```
+
+Javascript linter
+```bash
+eslint src/*.js
 ```
 
 ## Test the API locally

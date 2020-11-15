@@ -1,7 +1,9 @@
 import React from 'react';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
-// import MuiPhoneNumber from "material-ui-phone-number";
+import FormHelperText from '@material-ui/core/FormHelperText';
+
+import FaxInput from './FaxInput.js'
 
 // Controls selection of a local file.
 class FileSelector extends React.Component {
@@ -36,16 +38,20 @@ class FileSelector extends React.Component {
         <Button
           variant="contained"
           component="label"
+          required
+          fullWidth
         >
           Select PDF
           <input
             type="file"
             accept='.pdf,application/pdf'
-            style={{ display: "none" }}
+            hidden
             onChange={(event) => this.handleFileSelection(event)}
           />
         </Button>
-        {this.state.selectedFileStatus}
+        <FormHelperText>
+          {this.state.selectedFileStatus}
+        </FormHelperText>
       </React.Fragment>
     );
   }
@@ -56,42 +62,30 @@ class FaxNumberInput extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      faxNumberStatus: "",
+      faxNumberError: "",
     };
   }
   
   // Update and validate the input fax number.
-  handleInput(event) {
-    const faxNumber = event.target.value;
-    const {isValid: faxNumberIsValid, status: faxNumberStatus} = validateFaxNumber(faxNumber);
+  handleInput(faxNumber) {
+    const {isValid: faxNumberIsValid, status: faxNumberError} = validateFaxNumber(faxNumber);
 
     this.setState({
-      faxNumberStatus: faxNumberStatus,
+      faxNumberError: faxNumberError,
     });
     if (faxNumberIsValid) {
-      this.props.setFaxNumber("+1" + faxNumber);
+      this.props.setFaxNumber(faxNumber);
     }
   }
 
-  // Render the element that controls file seletion. 
+  // Render the element that controls fax number input. 
   render() {
     return (
-      <div>
-        {/* <MuiPhoneNumber onlyCountries={'us'} onChange={this.handleInput}/> */}
-        <TextField
-          variant="outlined"
-          margin="normal"
-          required
-          /*fullWidth*/
-          id="fax"
-          label="Fax Number"
-          name="fax"
-          autoComplete="fax"
-          autoFocus
-          onClick={(event) => this.handleInput(event)}
+      <>
+        <FaxInput
+          onChange={(event) => this.handleInput(event)}
         />
-        {this.state.faxNumberStatus}
-      </div>
+      </>
     );
   }
 }
@@ -148,7 +142,8 @@ function validateFaxNumber(faxNumber) {
     return {isValid, status};
   }
 
-  if (faxNumber.length !== 10) {
+  // Check the fax number length, which is 10 digits plus the US country code (+1)
+  if (faxNumber.length !== 12) {
     isValid = false;
     status = 'Error: Fax number must be 10 digits long';
     return {isValid, status};
