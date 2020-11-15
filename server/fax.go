@@ -1,7 +1,7 @@
 package main
 
 import (
-    "encoding/json"
+	"encoding/json"
 	"fmt"
 	guuid "github.com/google/uuid"
 	"log"
@@ -20,8 +20,8 @@ func uploadAndFaxFile(file *multipart.File, faxNumber string) (string, error) {
 		return "", err
 	}
 
-    // Get signed URL for the uploaded object.
-    signedUrl, err := getSignedUrl(fileName.String())
+	// Get signed URL for the uploaded object.
+	signedUrl, err := getSignedUrl(fileName.String())
 	if err != nil {
 		return "", err
 	}
@@ -32,30 +32,30 @@ func uploadAndFaxFile(file *multipart.File, faxNumber string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-    log.Println("Fax ID: ", faxId)
+	log.Println("Fax ID: ", faxId)
 	return faxId, nil
 }
 
 // Fax status query response data structure.
 type FaxStatusQueryResponse struct {
-    Data  FaxStatusResponseData   `json:"data"`
+	Data FaxStatusResponseData `json:"data"`
 }
 
 type FaxStatusResponseData struct {
-    Status        string `json:"status"`
-    FailureReason        string `json:"failure_reason,omitempty"`
+	Status        string `json:"status"`
+	FailureReason string `json:"failure_reason,omitempty"`
 }
 
 // Handle fax status queries.
 // https://developers.telnyx.com/docs/api/v2/programmable-fax/Programmable-Fax-Commands#ViewFax
 func getFaxStatus(faxId string) (string, error) {
-    log.Println("Getting fax status for fax ID:", faxId)
+	log.Println("Getting fax status for fax ID:", faxId)
 
 	// Get Telnyx account credentials.
 	apiKey := os.Getenv("TELNYX_API_KEY")
 	bearer := "Bearer " + apiKey
 
-    // Format and send the fax request.
+	// Format and send the fax request.
 	client := &http.Client{}
 	urlStr := "https://api.telnyx.com/v2/faxes/" + faxId
 	req, err := http.NewRequest("GET", urlStr, nil)
@@ -71,54 +71,54 @@ func getFaxStatus(faxId string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-    log.Println("Response:", resp)
+	log.Println("Response:", resp)
 
 	// Handle the response.
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", fmt.Errorf("Unsuccessful fax status request", resp.Status)
 	}
 
-    var data FaxStatusQueryResponse
-    decoder := json.NewDecoder(resp.Body)
-    if err := decoder.Decode(&data); err != nil {
-        return "", err
-    }
+	var data FaxStatusQueryResponse
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return "", err
+	}
 
-    log.Println("Response data:", data)
-    if data.Data.Status == "failed" {
-        return data.Data.FailureReason, nil
-    }
-    return data.Data.Status, nil
+	log.Println("Response data:", data)
+	if data.Data.Status == "failed" {
+		return data.Data.FailureReason, nil
+	}
+	return data.Data.Status, nil
 }
 
 // Handle fax status webhook.
 func handleFaxWebhook(msg FaxStatusWebhook) error {
-    log.Println("Fax status message:", msg)
+	log.Println("Fax status message:", msg)
 
-    // Delete the media file upon fax completion.
-    // Events: fax.queued, fax.media.processed, fax.sending.started, fax.delivered, fax.failed
-	if (msg.Data.EventType == "fax.delivered" || msg.Data.EventType == "fax.failed") {
-        // Signed URLs have the form https://storage.googleapis.com/bucket-name/file-name?signature
-        // First, split by '?' to get the non-signed URL
-        fileUrl := strings.Split(msg.Data.Payload.FileUrl, "?")[0]
-        // First, then split by '/' just to get the object filename.
-        fileUrlSplit := strings.Split(fileUrl, "/")
-        fileName := fileUrlSplit[len(fileUrlSplit)-1]
-	    if err := deleteGCS(fileName); err != nil {
-            return err
-        }
-	    log.Println("Deleted file at", fileName)
+	// Delete the media file upon fax completion.
+	// Events: fax.queued, fax.media.processed, fax.sending.started, fax.delivered, fax.failed
+	if msg.Data.EventType == "fax.delivered" || msg.Data.EventType == "fax.failed" {
+		// Signed URLs have the form https://storage.googleapis.com/bucket-name/file-name?signature
+		// First, split by '?' to get the non-signed URL
+		fileUrl := strings.Split(msg.Data.Payload.FileUrl, "?")[0]
+		// First, then split by '/' just to get the object filename.
+		fileUrlSplit := strings.Split(fileUrl, "/")
+		fileName := fileUrlSplit[len(fileUrlSplit)-1]
+		if err := deleteGCS(fileName); err != nil {
+			return err
+		}
+		log.Println("Deleted file at", fileName)
 	}
-    return nil
+	return nil
 }
 
 // Fax status query response data structure.
 type FaxSendResponse struct {
-    Data  FaxSendResponseData   `json:"data"`
+	Data FaxSendResponseData `json:"data"`
 }
 
 type FaxSendResponseData struct {
-    FaxId  string `json:"id"`
+	FaxId string `json:"id"`
 }
 
 // Send a file request to Telnyx Programmable Fax.
@@ -158,11 +158,11 @@ func faxUploadedFile(fileUrl string, sendToNumber string) (string, error) {
 		return "", fmt.Errorf("Unsuccessful fax request", resp.Status)
 	}
 
-    var data FaxSendResponse
-    decoder := json.NewDecoder(resp.Body)
-    if err := decoder.Decode(&data); err != nil {
-        return "", err
-    }
-    log.Println("Response data:", data)
+	var data FaxSendResponse
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return "", err
+	}
+	log.Println("Response data:", data)
 	return data.Data.FaxId, nil
 }

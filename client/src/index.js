@@ -10,7 +10,8 @@ ReactDOM.render(
     <CssBaseline />
     <React.StrictMode>
       <FaxMachineApp />
-    </React.StrictMode>,
+    </React.StrictMode>
+    ,
   </ThemeProvider>,
   document.getElementById('root')
 );

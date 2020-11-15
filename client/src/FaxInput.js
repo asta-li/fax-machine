@@ -1,9 +1,9 @@
-import { forwardRef } from 'react'
-import TextField from '@material-ui/core/TextField'
-import { makeStyles } from '@material-ui/core/styles'
+import { forwardRef } from 'react';
+import TextField from '@material-ui/core/TextField';
+import { makeStyles } from '@material-ui/core/styles';
 
-import 'react-phone-number-input/style.css'
-import PhoneInput from 'react-phone-number-input'
+import 'react-phone-number-input/style.css';
+import PhoneInput from 'react-phone-number-input';
 
 const MuiFaxInput = forwardRef((props, ref) => {
   return (
@@ -21,9 +21,9 @@ const MuiFaxInput = forwardRef((props, ref) => {
       autoComplete="fax-number"
       autoFocus
       error={false}
-      helperText={""}
+      helperText={''}
     />
-  )
+  );
 });
 
 /* TODO(asta): Bring back fax number error handling.
@@ -37,11 +37,11 @@ export default function FaxInput(props) {
   return (
     <div>
       <PhoneInput
-         country={"US"}
-         countries={["US"]}
-         addInternationalOption={false}
-         inputComponent={MuiFaxInput}
-         onChange={(faxNumber) => props.onChange(faxNumber)}
+        country={'US'}
+        countries={['US']}
+        addInternationalOption={false}
+        inputComponent={MuiFaxInput}
+        onChange={(faxNumber) => props.onChange(faxNumber)}
       />
     </div>
   );
