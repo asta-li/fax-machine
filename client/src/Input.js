@@ -51,72 +51,13 @@ class FileSelector extends React.Component {
 }
 
 // Controls fax number input.
-class FaxNumberInput extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      faxNumberStatus: "",
-    };
-  }
-
-  // Update and validate the input fax number.
-  handleInput(event) {
-    const faxNumber = event.target.value;
-    const {isValid: faxNumberIsValid, status: faxNumberStatus} = validateFaxNumber(faxNumber);
-
-    this.setState({
-      faxNumberStatus: faxNumberStatus,
-    });
-    if (faxNumberIsValid) {
-      this.props.setFaxNumber("+1" + faxNumber);
-    }
-  }
-
-  // Render the element that controls file seletion.
-  render() {
-    return (
-        <div>
-          {/* <MuiPhoneNumber onlyCountries={'us'} onChange={this.handleInput}/> */}
-          <TextField
-              variant="outlined"
-              margin="normal"
-              required
-              /*fullWidth*/
-              id="fax"
-              label="Fax Number"
-              name="fax"
-              autoComplete="fax"
-              autoFocus
-              onClick={(event) => this.handleInput(event)}
-          />
-          {this.state.faxNumberStatus}
-        </div>
-    );
-  }
-}
-//
-// // Controls fax number input.
-// const FaxNumberInput = props => {
-//   const [faxNumberError, setFaxNumberError] = React.useState('');
-//
-//   // Update and validate the input fax number.
-//   const handleInput = (faxNumber) => {
-//     const { isValid: faxNumberIsValid, status: faxNumberError } = validateFaxNumber(faxNumber);
-//
-//     setFaxNumberError(faxNumberError);
-//
-//     if (faxNumberIsValid) {
-//       props.setFaxNumber(faxNumber);
-//     }
-//   };
-//
-//   // Render the element that controls fax number input.
-//     return (
-//       <>
-//         <FaxInput onChange={(event) => handleInput(event)} />
-//       </>
-//     );
-// };
+const FaxNumberInput = props => {
+  return (
+    <>
+      <FaxInput onChange={(faxNumber) => props.setFaxNumber(faxNumber)} />
+    </>
+  );
+};
 
 export { FileSelector, FaxNumberInput };
 
@@ -158,25 +99,3 @@ function validateFile(file) {
   return { isValid, status };
 }
 
-// Validate the given fax number string.
-function validateFaxNumber(faxNumber) {
-  let isValid = false;
-  let status = 'Error';
-
-  if (!faxNumber) {
-    isValid = false;
-    status = 'Error: Please enter a fax number';
-    return { isValid, status };
-  }
-
-  // Check the fax number length, which is 10 digits plus the US country code (+1)
-  if (faxNumber.length !== 12) {
-    isValid = false;
-    status = 'Error: Fax number must be 10 digits long';
-    return { isValid, status };
-  }
-
-  isValid = true;
-  status = '';
-  return { isValid, status };
-}

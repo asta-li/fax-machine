@@ -1,19 +1,23 @@
 import React from 'react';
+import {Link, Route, Switch, useLocation} from 'react-router-dom';
 import PropTypes from 'prop-types';
+
+// Material UI imports.
 import CssBaseline from '@material-ui/core/CssBaseline';
 import MLink from '@material-ui/core/Link';
 import Box from '@material-ui/core/Box';
 import Typography from '@material-ui/core/Typography';
 import Container from '@material-ui/core/Container';
-import {withStyles} from '@material-ui/styles';
+import {makeStyles} from '@material-ui/styles';
 
+// Local imports.
 import {FaxNumberInput, FileSelector} from './Input.js';
 import {FileFaxer} from './Submit.js';
 import {ReactComponent as Logo} from './logo.svg';
-import {Link, Route, Switch, useLocation} from 'react-router-dom';
 import SendingFax from "./components/SendingFax";
 
-const styles = (theme) => ({
+// Styles the Home component.
+const useStyles = makeStyles((theme) => ({
   paper: {
     marginTop: theme.spacing(8),
     display: 'flex',
@@ -32,16 +36,7 @@ const styles = (theme) => ({
   submit: {
     margin: theme.spacing(3, 0, 2),
   },
-});
-
-// // TODO(asta): Debug StyledFileFaxer.
-// //
-// // FileFaxer.propTypes = {
-// //   classes: PropTypes.object.isRequired,
-// // };
-// //
-// // const StyledFileFaxer = withStyles(styles)(FileFaxer);
-// >>>>>>> 612be14 (paypal_integration)
+}));
 
 // A custom hook that builds on useLocation to parse
 // the query string for you.
@@ -103,32 +98,33 @@ const Home = props => {
 
   let showFileFaxer;
 
+  const classes = useStyles();
+
   if (!isUploadSuccess && !props.action) {
     showFileFaxer =
-        <div className={props.paper}>
-          <Logo className={props.logo} />
-          <Typography component="h1" variant="h4" gutterBottom>
-            I am a fax machine.
-          </Typography>
-          <form className={props.form} noValidate>
-            {/* Controls fax number input. */}
-            <FaxNumberInput
-              setFaxNumber={setFaxNumber}
+      <div className={classes.paper}>
+        <Logo className={classes.logo} />
+        <Typography component="h1" variant="h4" gutterBottom>
+          I am a fax machine.
+        </Typography>
+        <form className={classes.form} noValidate>
+          {/* Controls fax number input. */}
+          <FaxNumberInput
+            setFaxNumber={setFaxNumber}
           />
-            {/*/!* Controls file selection and validation. This component allows a user to select a file,*/}
-            {/*    validates the file, and updates the file information in the app state. *!/*/}
-            <FileSelector
-                setSelectedFile={setSelectedFile}
-            />
-            {/* Controls file upload and faxing. */}
-            {/*<StyledFileFaxer*/}
-            <FileFaxer
-                selectedFile={selectedFile}
-                faxNumber={faxNumber}
-                uploadSuccessHandler={uploadSuccessHandler}
-            />
-          </form>
-        </div>;
+          {/* Controls file selection and validation. This component allows a user to select a */}
+          {/* file, validates the file, and updates the file information in the app state. */}
+          <FileSelector
+              setSelectedFile={setSelectedFile}
+          />
+          {/* Controls file upload and faxing. */}
+          <FileFaxer
+              selectedFile={selectedFile}
+              faxNumber={faxNumber}
+              uploadSuccessHandler={uploadSuccessHandler}
+          />
+        </form>
+      </div>;
   }
   else {
     showFileFaxer = <div></div>;
@@ -160,8 +156,4 @@ const Home = props => {
   </div>
 };
 
-FaxMachineApp.propTypes = {
-  classes: PropTypes.object.isRequired,
-};
-
-export default withStyles(styles, { withTheme: true })(FaxMachineApp);
+export default FaxMachineApp;
