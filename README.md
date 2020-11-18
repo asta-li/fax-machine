@@ -113,10 +113,11 @@ eslint src/*.js
 ### Test `/api/fax-status`
 
 Query the fax status endpoint for the given Fax ID.
-```
-curl -X GET -d "{\"id\": \"${FAX_ID}\"}"  http://localhost:3000/api/fax-status
+```curl -X GET http://localhost:3000/api/fax-status?id=${FAX_ID}
+
 ```
 
+606bcbe5-a33b-4747-aa05-e691fa09710d
 ### Test `/fax-webhook`
 
 This webhook handles fax status updates from Telnyx:

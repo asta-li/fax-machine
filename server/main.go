@@ -87,24 +87,24 @@ func faxHandler(c *gin.Context) {
 
 }
 
-// Fax status query data structure.
-type FaxStatusQuery struct {
-	FaxId string `form:"id" json:"id"`
-}
-
 // Handle fax status queries.
 // https://developers.telnyx.com/docs/api/v2/programmable-fax/Programmable-Fax-Commands#ViewFax
 func faxQueryHandler(c *gin.Context) {
 	log.Println("Handling fax status query")
-	var msg FaxStatusQuery
-	if err := c.BindJSON(&msg); err != nil {
-		log.Println(err)
+	faxId := c.DefaultQuery("id", "")
+
+	if faxId == "" {
+		log.Println("query parameter fax id : `id` is missing from query parameters")
 		c.JSON(http.StatusBadRequest, gin.H{"status": "Unable to parse JSON request"})
+		return
 	}
 
-	status, err := getFaxStatus(msg.FaxId)
+	status, err := getFaxStatus(faxId)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "something went wrong with getting fax status"})
+		return
+
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": status})

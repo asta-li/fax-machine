@@ -155,6 +155,12 @@ type FaxStatusResponseData struct {
 
 // Handle fax status queries.
 // https://developers.telnyx.com/docs/api/v2/programmable-fax/Programmable-Fax-Commands#ViewFax
+// all possible responses from fax status
+//fax.queued
+//fax.media.processed
+//fax.sending.started
+//fax.delivered
+//fax.failed
 func getFaxStatus(faxId string) (string, error) {
 	log.Println("Getting fax status for fax ID:", faxId)
 
@@ -191,6 +197,7 @@ func getFaxStatus(faxId string) (string, error) {
 		return "", err
 	}
 
+	// TODO: list possible statuses
 	log.Println("Response data:", data)
 	if data.Data.Status == "failed" {
 		return data.Data.FailureReason, nil

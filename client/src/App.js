@@ -53,9 +53,7 @@ function Copyright() {
   return (
       <Typography variant="body2" color="textSecondary" align="center">
         {'Copyright © '}
-        <MLink color="inherit" href="https://github.com/asta-li/fax-machine">
           Fax Machine Dev
-        </MLink>{' '}
         {new Date().getFullYear()}
         {'.'}
       </Typography>
