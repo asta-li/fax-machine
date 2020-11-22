@@ -11,9 +11,10 @@ import Container from '@material-ui/core/Container';
 import {makeStyles} from '@material-ui/styles';
 
 // Local imports.
-import {FaxNumberInput, FileSelector} from './Input.js';
+import {FileInput} from './FileInput.js';
+import {FaxNumberInput} from './FaxNumberInput.js';
 import {FileFaxer} from './Submit.js';
-import {ReactComponent as Logo} from './logo.svg';
+import logo from './logo.png'; 
 import SendingFax from "./components/SendingFax";
 
 // Styles the Home component.
@@ -26,15 +27,15 @@ const useStyles = makeStyles((theme) => ({
   },
   logo: {
     margin: theme.spacing(1),
-    width: theme.spacing(9),
-    height: theme.spacing(9),
+    width: theme.spacing(10),
+    height: theme.spacing(10),
   },
   form: {
     width: '100%',
     marginTop: theme.spacing(1),
   },
   submit: {
-    margin: theme.spacing(3, 0, 2),
+    margin: theme.spacing(0, 0, 0),
   },
 }));
 
@@ -47,8 +48,8 @@ function useQuery() {
 function Copyright() {
   return (
       <Typography variant="body2" color="textSecondary" align="center">
-        {'Copyright © '}
-          Fax Machine Dev
+        {'Copyright ©'}
+        {' Fax Machine Dev '}
         {new Date().getFullYear()}
         {'.'}
       </Typography>
@@ -63,14 +64,6 @@ const FaxMachineApp = () => {
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
     <CssBaseline />
     <div>
-      <nav>
-        <ul>
-          <li>
-            <Link to="/">Home</Link>
-          </li>
-        </ul>
-      </nav>
-
       {/* A <Switch> looks through its children <Route>s and
             renders the first one that matches the current URL. */}
       <Switch>
@@ -89,7 +82,9 @@ const FaxMachineApp = () => {
 
 const Home = props => {
   const [selectedFile, setSelectedFile] = React.useState(null);
+  const [selectedFileError, setSelectedFileError] = React.useState('');
   const [faxNumber, setFaxNumber] = React.useState('+16504344807');
+  const [faxNumberError, setFaxNumberError] = React.useState('');
   const [isUploadSuccess, setUploadSuccess] = React.useState(false);
 
   const uploadSuccessHandler = (id) => {
@@ -103,7 +98,7 @@ const Home = props => {
   if (!isUploadSuccess && !props.action) {
     showFileFaxer =
       <div className={classes.paper}>
-        <Logo className={classes.logo} />
+        <img className={classes.logo} src={logo} alt="Logo" />
         <Typography component="h1" variant="h4" gutterBottom>
           I am a fax machine.
         </Typography>
@@ -111,17 +106,25 @@ const Home = props => {
           {/* Controls fax number input. */}
           <FaxNumberInput
             setFaxNumber={setFaxNumber}
+            faxNumberError={faxNumberError}
+            setFaxNumberError={setFaxNumberError}
           />
           {/* Controls file selection and validation. This component allows a user to select a */}
           {/* file, validates the file, and updates the file information in the app state. */}
-          <FileSelector
-              setSelectedFile={setSelectedFile}
+          <FileInput
+            selectedFile={selectedFile}
+            setSelectedFile={setSelectedFile}
+            selectedFileError={selectedFileError}
+            setSelectedFileError={setSelectedFileError}
           />
           {/* Controls file upload and faxing. */}
           <FileFaxer
-              selectedFile={selectedFile}
-              faxNumber={faxNumber}
-              uploadSuccessHandler={uploadSuccessHandler}
+            className={classes.submit}
+            selectedFile={selectedFile}
+            setSelectedFileError={setSelectedFileError}
+            faxNumber={faxNumber}
+            setFaxNumberError={setFaxNumberError}
+            uploadSuccessHandler={uploadSuccessHandler}
           />
         </form>
       </div>;
