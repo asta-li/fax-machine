@@ -26,7 +26,7 @@ class FileFaxer extends React.Component {
     // Make sure a file has successfully been selected.
     // If the file exists, it has already been validated.
     if (!this.props.selectedFile) {
-      const error = 'Select a file to fax';
+      const error = 'Select a file to fax.';
       this.props.setSelectedFileError(error);
       passedValidation = false;
     }

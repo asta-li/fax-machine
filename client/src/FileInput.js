@@ -1,35 +1,57 @@
 import React from 'react';
+
+import Paper from '@material-ui/core/Paper';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import FormHelperText from '@material-ui/core/FormHelperText';
 
+import { Document, Page, pdfjs } from "react-pdf";
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+
+
 // Controls selection of a local file.
 const FileInput = props => {
+  // PDF page state getters and setters.
+  const [numPages, setNumPages] = React.useState(null);
+  const [pageNumber, setPageNumber] = React.useState(1);
+
   // Update and validate the selected file.
-  const handleFileSelection = event => {
+  let handleFileSelection = event => {
     if (event.target.files.length === 0) {
       return;
     }
     const selectedFile = event.target.files[0];
     const { error : selectedFileError }  = validateFile(selectedFile);
+    props.setSelectedFileError(selectedFileError);
     if (selectedFileError) {
-      props.setSelectedFileError(selectedFileError);
       props.setSelectedFile(null);
     } else {
       // Update the state with the selected file only after it passes validation.
       props.setSelectedFile(selectedFile);
     }
   }
-    
+ 
+  // Set the number of pages on loading the document.
+  let onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
+  }
+
+  // Set file selection status.
   let status = 'Please select a file.';
   let error = false;
+  let preview = (<div></div>);
   if (props.selectedFileError) {
     error = true;
     status = props.selectedFileError;
   } else if (props.selectedFile) {
     status = props.selectedFile.name; 
+    preview = (
+      <FormHelperText>
+        Preview: Page {pageNumber} of {numPages}
+      </FormHelperText>
+    )
   }
-  
+
   // Render the element that controls file seletion.
   return (
     <React.Fragment>
@@ -43,6 +65,20 @@ const FileInput = props => {
         />
       </Button>
       <FormHelperText error={error}>{status}</FormHelperText>
+      <Paper elevation={2} align={'center'}>
+        <Document
+          file={props.selectedFile}
+          onLoadSuccess={onDocumentLoadSuccess}
+          noData={''}
+          options={{
+            cMapUrl: 'cmaps/',
+            cMapPacked: true,
+          }}
+        > 
+          <Page pageNumber={pageNumber} scale={0.5}/>
+        </Document>
+      </Paper>
+      {preview}
     </React.Fragment>
   );
 }

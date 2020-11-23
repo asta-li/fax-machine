@@ -97,7 +97,7 @@ const Home = props => {
 
   if (!isUploadSuccess && !props.action) {
     showFileFaxer =
-      <div className={classes.paper}>
+      <Container className={classes.paper} component="main" maxWidth="s">
         <img className={classes.logo} src={logo} alt="Logo" />
         <Typography component="h1" variant="h4" gutterBottom>
           I am a fax machine.
@@ -127,7 +127,7 @@ const Home = props => {
             uploadSuccessHandler={uploadSuccessHandler}
           />
         </form>
-      </div>;
+      </Container>;
   }
   else {
     showFileFaxer = <div></div>;
